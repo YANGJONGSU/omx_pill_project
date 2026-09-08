@@ -1,0 +1,25 @@
+{
+ "action": {
+  "shoulder_pan.pos": 15.1953125,
+  "shoulder_lift.pos": -4.171875,
+  "elbow_flex.pos": 17.6875,
+  "wrist_flex.pos": 20.9375,
+  "wrist_roll.pos": 0.0185546875,
+  "gripper.pos": 51.875
+ },
+ "state": {
+  "shoulder_pan.pos": 15.653235653235669,
+  "shoulder_lift.pos": -3.3943833943833965,
+  "elbow_flex.pos": 18.046398046398053,
+  "wrist_flex.pos": 21.611721611721606,
+  "wrist_roll.pos": -0.17094017094017033,
+  "gripper.pos": 54.82295482295483,
+  "goal_u": 0.2735648777173913,
+  "goal_v": 0.3994338768115942
+ },
+ "offset": {
+  "depth": 0.0,
+  "lateral": 0.0,
+  "z": 0.0
+ }
+}

@@ -1,0 +1,1446 @@
+<title>OMX 알약 조제 — 기술 정리와 트러블슈팅</title>
+<style>
+  /* ── 토큰: 라이트가 기본, 다크는 토큰만 재정의 ───────────────────── */
+  :root {
+    --bg:        #f4f6f5;
+    --surface:   #ffffff;
+    --surface-2: #eceff0;
+    --line:      #d5dcdb;
+    --line-soft: #e4e9e9;
+    --ink:       #15201f;
+    --ink-2:     #43514f;
+    --ink-3:     #6d7b79;
+    --accent:    #0d5c58;
+    --accent-2:  #0a4b48;
+    --accent-bg: #dfeceb;
+    --red:       #b8403a;
+    --green:     #2f7d4f;
+    --yellow:    #9a7413;
+    --red-bg:    #f6e3e2;
+    --green-bg:  #e0efe6;
+    --yellow-bg: #f2ebd8;
+    --code-bg:   #eef1f1;
+    --shadow:    0 1px 2px rgba(21,32,31,.06), 0 8px 24px -16px rgba(21,32,31,.28);
+    --sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic",
+            system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", "D2Coding", "Noto Sans Mono CJK KR", ui-monospace,
+            "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #101615;
+      --surface:   #172020;
+      --surface-2: #1e2928;
+      --line:      #2c3a39;
+      --line-soft: #243130;
+      --ink:       #e6edec;
+      --ink-2:     #b0bfbd;
+      --ink-3:     #7f908e;
+      --accent:    #5fc9bf;
+      --accent-2:  #8adcd3;
+      --accent-bg: #14312f;
+      --red:       #e8867f;
+      --green:     #74c795;
+      --yellow:    #d6b45c;
+      --red-bg:    #2e1c1b;
+      --green-bg:  #16291f;
+      --yellow-bg: #2b2415;
+      --code-bg:   #1b2524;
+      --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:        #101615;
+    --surface:   #172020;
+    --surface-2: #1e2928;
+    --line:      #2c3a39;
+    --line-soft: #243130;
+    --ink:       #e6edec;
+    --ink-2:     #b0bfbd;
+    --ink-3:     #7f908e;
+    --accent:    #5fc9bf;
+    --accent-2:  #8adcd3;
+    --accent-bg: #14312f;
+    --red:       #e8867f;
+    --green:     #74c795;
+    --yellow:    #d6b45c;
+    --red-bg:    #2e1c1b;
+    --green-bg:  #16291f;
+    --yellow-bg: #2b2415;
+    --code-bg:   #1b2524;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 48px;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 28px 120px;
+  }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 20px 80px; }
+    nav.toc { position: static; border-right: 0; border-bottom: 1px solid var(--line);
+              padding: 20px 0 24px; margin-bottom: 32px; max-height: none; }
+  }
+
+  /* ── 머리말 ─────────────────────────────────────────────────────── */
+  header.top {
+    grid-column: 1 / -1;
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.16;
+    letter-spacing: -.022em;
+    font-weight: 700;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  .lede {
+    font-size: 17.5px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin-top: 30px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .meta b { color: var(--ink-2); font-weight: 600; }
+
+  /* ── 목차 ───────────────────────────────────────────────────────── */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 8px 0 40px;
+    font-size: 13.5px;
+  }
+  nav.toc p {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 12px;
+  }
+  nav.toc a {
+    display: block;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 4px 0 4px 12px;
+    border-left: 2px solid var(--line-soft);
+    line-height: 1.45;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible {
+    color: var(--accent); border-left-color: var(--accent); background: var(--accent-bg);
+  }
+  nav.toc a.sub { padding-left: 22px; font-size: 12.5px; color: var(--ink-3); }
+  nav.toc a.gap { margin-top: 12px; }
+
+  /* ── 본문 ───────────────────────────────────────────────────────── */
+  main { min-width: 0; }
+  section { margin-bottom: 68px; scroll-margin-top: 24px; }
+  h2 {
+    font-size: 25px;
+    letter-spacing: -.018em;
+    font-weight: 700;
+    margin: 0 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ink);
+    text-wrap: balance;
+  }
+  h2 + .sub { color: var(--ink-3); font-size: 14.5px; margin: 0 0 28px; }
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.012em;
+    margin: 40px 0 12px;
+    text-wrap: balance;
+  }
+  h4 {
+    font-size: 15px; font-weight: 700; margin: 26px 0 8px; color: var(--ink);
+  }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  ul, ol { margin: 0 0 16px; padding-left: 22px; max-width: 68ch; }
+  li { margin-bottom: 6px; }
+  strong { font-weight: 700; }
+  a { color: var(--accent); }
+
+  code {
+    font-family: var(--mono);
+    font-size: .875em;
+    background: var(--code-bg);
+    padding: .12em .38em;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.62;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .tablewrap { overflow-x: auto; margin: 0 0 22px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  th {
+    font-size: 11.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+  tr.hi td { background: var(--accent-bg); font-weight: 600; }
+
+  /* ── 트러블슈팅 항목 ────────────────────────────────────────────── */
+  .case {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+    margin: 0 0 20px;
+  }
+  .case-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .case-head h4 { margin: 0; font-size: 16.5px; flex: 1 1 auto; min-width: 0; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .06em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .chip.ok    { background: var(--green-bg);  color: var(--green); }
+  .chip.warn  { background: var(--yellow-bg); color: var(--yellow); }
+  .chip.open  { background: var(--red-bg);    color: var(--red); }
+  .date { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+
+  dl.fields { margin: 0; display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 4px 16px; }
+  @media (max-width: 560px) { dl.fields { grid-template-columns: minmax(0,1fr); gap: 2px; } }
+  dl.fields dt {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--ink-3);
+    padding-top: 5px;
+  }
+  dl.fields dd { margin: 0 0 10px; }
+  dl.fields dd :last-child { margin-bottom: 0; }
+  dl.fields dd p { margin-bottom: 8px; }
+  dl.fields dd pre { margin-bottom: 8px; }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-bg);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin: 0 0 22px;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 6px;
+  }
+
+  .statgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0 0 26px;
+  }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .k {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 6px;
+  }
+  .stat .v {
+    font-size: 21px; font-weight: 700; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; display: block; line-height: 1.2;
+  }
+  .stat .n { font-size: 12.5px; color: var(--ink-3); display: block; margin-top: 4px; }
+
+  .swatch { display: inline-block; width: .62em; height: .62em; border-radius: 50%; margin-right: .35em; vertical-align: baseline; }
+  .sw-r { background: var(--red); } .sw-g { background: var(--green); } .sw-y { background: var(--yellow); }
+
+  footer.end {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--ink-3);
+    font-family: var(--mono);
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">AI 기반 대학병원 환자 안내 및 약국 자동 조제 로봇 시스템 · OMX 파트</p>
+  <h1>알약 조제 모방학습 — 기술 정리와 트러블슈팅</h1>
+  <p class="lede">
+    OMX 로봇팔이 여러 색 알약이 섞인 트레이에서 <strong>지정된 색만</strong> 골라 약통에 담게 만드는 과제.
+    되는 것과 안 되는 것, 그리고 안 되는 이유를 계측으로 짚어낸 기록.
+  </p>
+  <div class="meta">
+    <span><b>기간</b> 2026-08-02 ~ 08-10</span>
+    <span><b>데이터셋</b> 224 에피소드 / 245,529 프레임</span>
+    <span><b>커밋</b> 38</span>
+    <span><b>도구 스크립트</b> 64</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="목차">
+  <p>목차</p>
+  <a href="#overview">한 장 요약</a>
+  <a href="#stack" class="gap">1. 시스템 구성</a>
+  <a href="#pipeline" class="sub">데이터 파이프라인</a>
+  <a href="#arch" class="sub">정책 아키텍처</a>
+  <a href="#film" class="sub">FiLM 목표 조건화</a>
+  <a href="#tech" class="gap">2. 사용한 기술</a>
+  <a href="#tech-list" class="sub">기술 목록과 출처</a>
+  <a href="#tech-why" class="sub">왜 이 조합인가</a>
+  <a href="#metric" class="gap">3. 평가 지표</a>
+  <a href="#experiments" class="gap">4. 실험 기록</a>
+  <a href="#dataset" class="gap">5. 버전 이력과 데이터셋</a>
+  <a href="#dataset" class="sub">파일럿 v1 → v2 → v3</a>
+  <a href="#related" class="gap">6. 선행 연구와 기여</a>
+  <a href="#papers" class="sub">저널 3편</a>
+  <a href="#origins" class="sub">학회 원전</a>
+  <a href="#contrib" class="sub">우리 기여</a>
+  <a href="#ts" class="gap">7. 트러블슈팅</a>
+  <a href="#ts-core" class="sub">대표 사례</a>
+  <a href="#ts-data" class="sub">데이터 무결성</a>
+  <a href="#ts-hw" class="sub">하드웨어</a>
+  <a href="#ts-sw" class="sub">소프트웨어·조작</a>
+  <a href="#verify" class="gap">8. 검증 방법론</a>
+  <a href="#tools" class="gap">9. 도구</a>
+  <a href="#open" class="gap">10. 미해결과 다음</a>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="overview">
+  <h2>한 장 요약</h2>
+  <p class="sub">지금 무엇이 되고 무엇이 안 되는가</p>
+
+  <div class="statgrid">
+    <div class="stat"><span class="k">되는 것</span><span class="v">색별 정책 3개</span><span class="n">실기에서 집어 약통에 담는다</span></div>
+    <div class="stat"><span class="k">안 되는 것</span><span class="v">정책 1개로 3색</span><span class="n">지시를 무시하고 아무거나 집는다</span></div>
+    <div class="stat"><span class="k">자기색 대비</span><span class="v">1.00 → 1.33</span><span class="n">FiLM 도입 후, 96K에서 정체</span></div>
+    <div class="stat"><span class="k">원인</span><span class="v">두 겹</span><span class="n">주입 방식 + 데이터 구조</span></div>
+  </div>
+
+  <p>
+    로봇은 <strong>화면을 보고 알약 위치를 찾는 일은 처음부터 잘했다.</strong>
+    파지까지 30% 지점에서 화면만으로 목표 위치를 특정한다(정책 상관 0.77 vs 관절 상관 0.01).
+    못 하는 것은 딱 하나 — <strong>지시에 따라 대상을 바꾸는 것</strong>이다.
+  </p>
+  <p>
+    원인을 두 겹으로 분리했다. 하나는 <strong>목표를 넣는 방식</strong>(ACT 인코더 토큰 603개 중 1개, 0.17%)이고,
+    다른 하나는 <strong>데이터 구조</strong>(각 배치가 딱 한 번, 한 목표로만 등장 → 장면만 외워도 손실이 0).
+    앞의 것은 FiLM으로 고쳐 1.00 → 1.33배가 됐고, 뒤의 것을 고치려고
+    <strong>같은 장면 × 3목표</strong> 128 에피소드를 새로 찍었다.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="stack">
+  <h2>1. 시스템 구성</h2>
+  <p class="sub">하드웨어부터 학습까지</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>층</th><th>구성</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>로봇</td><td>OMX 팔로워 + 리더 암 (dynamixel-sdk)</td><td>리더암 텔레오퍼레이션으로 시연 수집</td></tr>
+        <tr><td>카메라</td><td><code>top</code> 고정 오버헤드 · <code>wrist</code> 그리퍼 상단</td><td>둘 다 640×480 MJPG 30fps</td></tr>
+        <tr><td>연산</td><td>RTX 4060 Laptop (VRAM 8GB)</td><td>배치 8 + AMP 필수</td></tr>
+        <tr><td>프레임워크</td><td>LeRobot v0.4.4 (editable, 버전 고정)</td><td>로컬 패치 다수 — 재설치하면 날아간다</td></tr>
+        <tr><td>정책</td><td>ACT (chunk 100) · SmolVLA 비교군</td><td>Diffusion Policy는 다음 단계</td></tr>
+        <tr><td>OS</td><td>Ubuntu 24.04.4 LTS</td><td>venv <code>~/venv/il</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="pipeline">데이터 파이프라인</h3>
+  <pre><code>리더암 텔레오퍼레이션
+   ↓  lerobot-record  (--dataset.single_task="pick red pill")
+1unasy/pill_v3          224 에피소드 / 245,529 프레임
+   ↓  make_onehot.py    task 문자열 → 3차원 원-핫
+1unasy/pill_v3_onehot_224
+   ↓  lerobot-train     ACT + FiLM, 증강 ON
+train/act_film_224</code></pre>
+
+  <div class="callout">
+    <span class="label">왜 원-핫 변환이 따로 필요한가</span>
+    <p>
+      ACT 안에는 <strong>토크나이저도 언어 인코더도 없다.</strong> <code>"pick red pill"</code>이라는 문자열을 읽지 못한다.
+      목표를 받을 수 있는 통로는 <code>observation.environment_state</code> 하나뿐인데,
+      <code>lerobot-record</code>는 이 항목을 만들지 못한다. 그래서 녹화가 끝난 뒤
+      <code>task_index</code>를 보고 원-핫 벡터를 계산해 새 피처로 붙인다.
+    </p>
+    <p style="margin-top:8px">
+      키 이름이 정확히 <code>observation.environment_state</code>여야 <code>FeatureType.ENV</code>로 잡힌다.
+      다른 이름을 쓰면 STATE로 분류돼 관절값과 섞인다. ENV는 정규화 매핑에 없어 IDENTITY로 처리되므로
+      <strong>0/1이 그대로</strong> 들어간다.
+    </p>
+  </div>
+
+  <h3 id="arch">정책 아키텍처</h3>
+  <p>
+    ACT는 ResNet18로 두 카메라를 인코딩한다. 480×640 입력이 15×20 특징맵이 되므로
+    카메라당 300 토큰, 두 대면 600 토큰이다. 여기에 latent · state · env_state가 하나씩 붙어
+    <strong>전체 603 토큰</strong>이 된다.
+  </p>
+
+  <div class="statgrid">
+    <div class="stat"><span class="k">이미지</span><span class="v">600</span><span class="n">전체의 99.5%</span></div>
+    <div class="stat"><span class="k">목표(env_state)</span><span class="v">1</span><span class="n">전체의 0.17%</span></div>
+    <div class="stat"><span class="k">나머지</span><span class="v">2</span><span class="n">latent · state</span></div>
+  </div>
+
+  <p>
+    <strong>이 비율이 첫 번째 원인이다.</strong> 목표가 토큰 하나로 들어가면, 어텐션이 그것을 무시하고
+    이미지 600개만 봐도 학습 손실은 충분히 낮아진다.
+  </p>
+
+  <h3 id="film">FiLM 목표 조건화 (로컬 패치)</h3>
+  <p>
+    토큰 하나 대신 <strong>모든 시각 채널을 목표로 변조</strong>하도록 바꿨다.
+    FiLM(Feature-wise Linear Modulation)은 목표 벡터로 스케일 γ와 시프트 β를 만들어
+    512개 채널 전부에 곱하고 더한다.
+  </p>
+  <pre><code>f' = (1 + γ(goal)) · f + β(goal)</code></pre>
+  <pre><code># configuration_act.py
+film_conditioning: bool = False        # 기본 꺼짐 — 기존 체크포인트 호환
+
+# modeling_act.py — γ는 1 근처, β는 0 근처에서 출발하도록 마지막 층 0 초기화
+self.film = nn.Sequential(
+    nn.Linear(env_state_dim, dim_model), nn.ReLU(),
+    nn.Linear(dim_model, 2 * dim_model),
+)
+nn.init.zeros_(self.film[-1].weight)
+nn.init.zeros_(self.film[-1].bias)
+
+# forward — 이미지 특징에 적용
+gb = self.film(batch[OBS_ENV_STATE])
+gamma, beta = gb.chunk(2, dim=-1)
+cam_features = (1.0 + gamma[:, :, None, None]) * cam_features + beta[:, :, None, None]</code></pre>
+  <p>
+    <strong>env_state 토큰은 그대로 둔다.</strong> 없애면 위치 임베딩이 602 vs 603으로 어긋나 터진다.
+    FiLM은 추가 경로로 넣는다. 원본은 <code>*.orig</code>로 백업돼 있다.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="tech">
+  <h2>2. 사용한 기술</h2>
+  <p class="sub">무엇을 어디서 가져와 어떻게 썼는가</p>
+
+  <h3 id="tech-list">기술 목록과 출처</h3>
+
+  <h4>학습 패러다임</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>기술</th><th>이 프로젝트에서의 역할</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>모방학습 (Behavioral Cloning)</strong></td>
+          <td>보상 설계 없이 사람 시연만으로 정책을 만든다. 리더암 텔레오퍼레이션으로 224회 시연 수집.</td>
+          <td>고전 BC. 강화학습 대비 안전하고 데이터 효율이 높다</td>
+        </tr>
+        <tr>
+          <td><strong>목표 조건화 (Goal-conditioned IL)</strong></td>
+          <td>정책 하나가 <code>π(a | 관측, 목표)</code> 형태로 여러 목표를 처리. 이 프로젝트의 핵심 난제.</td>
+          <td>언어 조건화 조작 연구 전반</td>
+        </tr>
+        <tr>
+          <td><strong>State Machine 분리</strong></td>
+          <td>모델은 "하나만 집기"만 배우고, 처방(빨강+노랑 등) 순서는 상위 로직이 <code>pick()</code>을 반복 호출.</td>
+          <td>설계 결정 — CLAUDE.md 2번</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>정책 아키텍처</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>기술</th><th>이 프로젝트에서의 역할</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>ACT</strong> (Action Chunking with Transformers)</td>
+          <td>주 정책. ResNet18 백본 2대 + 트랜스포머 인코더·디코더.</td>
+          <td>Zhao et al., <em>RSS 2023</em> (ALOHA)</td>
+        </tr>
+        <tr>
+          <td><strong>Action Chunking</strong></td>
+          <td>한 번에 <code>chunk_size=100</code>스텝(약 3.3초)의 행동을 예측. 복합 오차와 다중모드성을 줄인다.</td>
+          <td>ACT 논문의 핵심 아이디어</td>
+        </tr>
+        <tr>
+          <td><strong>CVAE</strong> (조건부 변분 오토인코더)</td>
+          <td>사람 시연의 다중모드성 흡수. <code>use_vae=True</code>로 latent 토큰이 인코더에 들어간다.</td>
+          <td>ACT 논문</td>
+        </tr>
+        <tr>
+          <td><strong>Temporal Ensembling</strong></td>
+          <td>겹치는 청크들을 지수가중 평균해 이음매의 튐을 없앤다. 계수 0.01 사용.</td>
+          <td>ACT 논문</td>
+        </tr>
+        <tr>
+          <td><strong>DETR 계열 셋 예측</strong></td>
+          <td>ACT가 기반으로 삼은 인코더·디코더 구조. 고정 길이 쿼리로 행동 시퀀스를 한 번에 출력.</td>
+          <td>Carion et al., ECCV 2020 (ACT를 통해 간접 사용)</td>
+        </tr>
+        <tr class="hi">
+          <td><strong>FiLM</strong> (Feature-wise Linear Modulation)</td>
+          <td>목표 벡터로 γ·β를 만들어 <strong>512개 시각 채널 전부</strong>를 변조. 토큰 1개(0.17%) 주입의 한계를 넘으려 직접 이식.</td>
+          <td>Perez et al., <em>AAAI 2018</em></td>
+        </tr>
+        <tr>
+          <td><strong>SmolVLA</strong> (Vision-Language-Action)</td>
+          <td>비교군. 언어를 직접 읽는 정책으로 원-핫 없이 <code>"pick red pill"</code>을 그대로 쓴다. SmolVLM2-500M 백본.</td>
+          <td>Hugging Face, 2025</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>학습 기법</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>기술</th><th>이 프로젝트에서의 역할</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><strong>이미지 증강</strong></td><td>색상·채도·밝기 흔들기. 장면 통째 암기를 어렵게 만든다.</td><td>효과는 통제 비교로 재검증 — §4 정정 참고</td></tr>
+        <tr><td><strong>Mixed Precision (AMP)</strong></td><td>VRAM 8GB에서 ACT + 카메라 2대를 돌리기 위한 필수 조건.</td><td>배치 8이 상한</td></tr>
+        <tr><td><strong>에폭 정렬 통제</strong></td><td>비교군마다 데이터 노출량을 같게 맞춘다. 스텝만 맞추면 "덜 봐서 실패"와 구분 불가.</td><td>이 프로젝트 실험 설계의 핵심</td></tr>
+        <tr><td><strong>0 초기화 잔차</strong></td><td>FiLM 마지막 층을 0으로 초기화해 γ≈1·β≈0에서 출발. 기존 학습을 망가뜨리지 않고 얹는다.</td><td>ResNet·어댑터 계열의 표준 수법</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>진단 · 검증 기법</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>기술</th><th>이 프로젝트에서의 역할</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>개입 기반 진단</strong> (intervention)</td>
+          <td>같은 관측에 목표만 바꿔 넣고 예측 변화를 잰다. 재학습·새 데이터·로봇 없이 몇 분.</td>
+          <td>인과추론의 개입 개념을 조건화 진단에 적용</td>
+        </tr>
+        <tr>
+          <td><strong>지름길 학습 진단</strong></td>
+          <td>모델이 써야 할 단서(목표) 대신 쉬운 단서(장면)를 쓰는지 확인.</td>
+          <td>Geirhos et al., <em>Nature MI 2020</em></td>
+        </tr>
+        <tr>
+          <td><strong>인과 혼동 검사</strong></td>
+          <td>정보를 더 줬을 때 오히려 나빠지는지 확인. 회복 시연 추가와 장기 학습에서 두 번 재현.</td>
+          <td>de Haan et al., <em>NeurIPS 2019</em></td>
+        </tr>
+        <tr>
+          <td><strong>위상 상관</strong> (Phase correlation)</td>
+          <td>영상 224개의 카메라 평행이동을 픽셀 단위로 측정. 밀린 3개를 찾아냈다.</td>
+          <td>고전 영상 정합</td>
+        </tr>
+        <tr>
+          <td><strong>ECC 어파인 정합</strong></td>
+          <td>위상 상관이 못 잡는 <strong>배율·회전</strong>을 측정. 0.2% 이내 확인.</td>
+          <td>Evangelidis &amp; Psarakis, 2008</td>
+        </tr>
+        <tr>
+          <td><strong>픽셀 중앙값 배경</strong></td>
+          <td>에피소드 전 프레임의 중앙값으로 움직이는 팔을 지우고 정지 물체만 남긴다. 볼펜 검출.</td>
+          <td>고전 배경 추정</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="tech-why">왜 이 조합인가</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>선택</th><th>대안</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ACT</strong></td><td>Diffusion Policy, VQ-BeT</td><td>학습·추론이 빠르고 소량 데이터에서 동작한다. 실시간 제어가 된다. Diffusion은 다음 단계로 미룸</td></tr>
+        <tr><td><strong>원-핫</strong></td><td>언어(VLA)</td><td>ACT에 토크나이저가 없다. 3색이면 3차원으로 충분하고 해석이 명확하다</td></tr>
+        <tr><td><strong>FiLM</strong></td><td>토큰 추가, 크로스 어텐션</td><td>토큰을 늘려도 600개 이미지 토큰에 묻힌다. FiLM은 <strong>모든 채널</strong>에 작용해 무시할 수 없다</td></tr>
+        <tr><td><strong>카메라 2대</strong></td><td>오버헤드 1대</td><td>wrist가 파지 순간의 정밀도를, top이 전역 위치를 담당. 그리퍼가 잡는 순간이 wrist에 명확히 보인다</td></tr>
+        <tr><td><strong>배치 8</strong></td><td>더 큰 배치</td><td>VRAM 8GB 한계. AMP를 켜도 상한이다</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="metric">
+  <h2>3. 평가 지표</h2>
+  <p class="sub">재학습 없이 체크포인트에서 직접 재는 개입형 지표</p>
+
+  <h4>자기색 대비</h4>
+  <p>
+    같은 관측에 <strong>목표만 바꿔 넣고</strong> 행동 예측이 얼마나 나빠지는지 잰다.
+  </p>
+  <pre><code>자기색 대비 = (틀린 목표를 줬을 때의 오차) ÷ (올바른 목표를 줬을 때의 오차)
+
+1.00  목표를 완전히 무시  (틀린 목표를 줘도 예측이 같다)
+3.00  목표를 확실히 읽음</code></pre>
+
+  <h4>Δ — 목표를 바꿨을 때의 행동 변화량</h4>
+  <p>원-핫 토큰 0.02 → FiLM 0.63. <strong>31배</strong>. 주입 방식이 실제로 신호를 통과시킨다는 직접 증거다.</p>
+
+  <h4>화면 기여도</h4>
+  <p>
+    정책 예측과 실제 목표 위치의 상관에서, <strong>관절값만으로 설명되는 몫을 뺀 것</strong>.
+  </p>
+  <div class="callout">
+    <span class="label">계측 함정 — 상태 누출</span>
+    <p>
+      파지 직전에서 재면 관절값만으로 상관 1.00이 나온다. 팔이 이미 알약 위에 있으니 당연하다.
+      <strong>파지까지 30% 지점</strong>에서 재야 화면 기여가 분리된다 (정책 0.77 vs 관절 0.01).
+      표본이 적으면 없는 신호가 보인다 — 6개로 보이던 순서 효과가 87개로 늘리니 사라졌다.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="experiments">
+  <h2>4. 실험 기록</h2>
+  <p class="sub">에폭을 맞춘 통제 비교</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>목표 주입</th><th>증강</th><th class="num">스텝</th><th class="num">에폭</th><th class="num">자기색 대비</th><th>판정</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>색별 정책 3개 (목표 없음)</td><td>ON</td><td class="num">40K</td><td class="num">9.0</td><td class="num">3.26–5.45</td><td>구분함</td></tr>
+        <tr><td>원-핫 <strong>토큰</strong></td><td>OFF</td><td class="num">80K</td><td class="num">5.5</td><td class="num">1.00</td><td>무시</td></tr>
+        <tr><td>원-핫 <strong>토큰</strong></td><td>ON</td><td class="num">40K</td><td class="num">2.8</td><td class="num">1.00</td><td>무시</td></tr>
+        <tr><td>원-핫 <strong>토큰</strong></td><td>ON</td><td class="num">128K</td><td class="num">9.0</td><td class="num">1.00</td><td>무시</td></tr>
+        <tr class="hi"><td>원-핫 <strong>FiLM</strong></td><td>ON</td><td class="num">128K</td><td class="num">8.9</td><td class="num">1.33</td><td>96K부터 정체</td></tr>
+        <tr><td>SmolVLA 언어</td><td>ON</td><td class="num">20K</td><td class="num">1.4</td><td class="num">1.02</td><td>무시</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <span class="label">왜 에폭을 맞췄나</span>
+    <p>
+      스텝만 맞추면 3색 정책은 색별 정책보다 데이터를 3배 적게 본다.
+      그러면 "목표를 무시해서 실패한 것"과 "덜 봐서 실패한 것"이 구분되지 않는다.
+      에폭을 맞춰야 데이터 노출량이 같아지고, 남은 차이가 목표 주입 방식 때문이라고 말할 수 있다.
+    </p>
+  </div>
+
+  <h4>더 오래 돌리면 오히려 나빠진다</h4>
+  <p>
+    원-핫 토큰의 Δ는 40K에서 0.05, 128K에서 0.02로 <strong>줄었다.</strong>
+    학습이 길어질수록 "장면만 외우는" 지름길이 깊어진다. 학습량 부족이 아니라는 반증이다.
+  </p>
+
+  <h4>정정 — 발표에서 뺀 결론</h4>
+  <p>
+    <strong>"증강이 색 구분을 만들었다"</strong>는 주장은 통제 비교를 통과하지 못했다.
+    10K 같은 조건(맨바닥 · 배치 8 · 같은 데이터, 증강만 다름)에서
+    증강 ON 1.30배 / OFF <strong>1.62배</strong>로 오히려 OFF가 높았다.
+    기존 결론은 파인튜닝→맨바닥, 10K→40K, 증강 OFF→ON이 <em>동시에</em> 바뀐 실행들을 비교한 것이었다.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="dataset">
+  <h2>5. 버전 이력과 데이터셋</h2>
+  <p class="sub">파일럿 → v2 → v3, 세 번 갈아엎은 이유</p>
+
+  <p>
+    데이터셋을 두 번 버리고 새로 시작했다. 둘 다 <strong>데이터가 모자라서가 아니라
+    세팅이 흔들려서</strong>였다. 이 프로젝트에서 가장 비싼 교훈이다.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>버전</th><th>기간</th><th class="num">규모</th><th>범위</th><th>버린 이유</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>파일럿 v1</strong><br><code>pill_pilot_v1</code></td>
+          <td>07-22 ~ 07-30</td>
+          <td class="num">60개<br>48,811f</td>
+          <td>노랑만</td>
+          <td>화각이 세션 중 밀렸고, 알약 배치가 화면 위쪽 40%에 쏠렸다</td>
+        </tr>
+        <tr>
+          <td><strong>v2</strong><br><code>pill_v2</code></td>
+          <td>08-02 ~ 08-03</td>
+          <td class="num">20개<br>22,849f</td>
+          <td>노랑 리허설</td>
+          <td>물리 세팅 문제 <strong>5가지</strong>가 측정으로 드러났다 (아래)</td>
+        </tr>
+        <tr class="hi">
+          <td><strong>v3</strong><br><code>pill_v3</code></td>
+          <td>08-04 ~ 08-10</td>
+          <td class="num">224개<br>245,529f</td>
+          <td>3색 + 정지 시연</td>
+          <td>현재 사용 중</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>파일럿 v1 — 파이프라인은 되는데 세팅이 흔들렸다</h3>
+  <p>
+    노랑 알약만으로 60개를 모아 ACT 20K 스텝을 돌렸다. 결과 자체는 나쁘지 않았다.
+  </p>
+  <div class="statgrid">
+    <div class="stat"><span class="k">최종 loss</span><span class="v">0.086</span><span class="n">단조 감소, 발산 없음</span></div>
+    <div class="stat"><span class="k">오프라인 MAE</span><span class="v">1.04</span><span class="n">액션 범위의 2.2%</span></div>
+    <div class="stat"><span class="k">평균 대비</span><span class="v">11.3배</span><span class="n">정확</span></div>
+    <div class="stat"><span class="k">그리퍼 타이밍</span><span class="v">±3 프레임</span><span class="n">0.1초 이내</span></div>
+  </div>
+  <p>
+    학습은 멀쩡했다. 문제는 <strong>데이터 자체</strong>였다.
+  </p>
+  <ul>
+    <li><strong>화각이 세션 중 밀렸다</strong> — 7/31에 발견. 붐암에 달린 카메라가 건드릴 때마다 움직였다</li>
+    <li><strong>배치가 쏠렸다</strong> — 파지 시점 pan 표준편차 5.9, 5도 구간 8개 중 5개, 60개가 세 덩어리로 뭉쳤다. 위치를 외울 수 있는 구조</li>
+    <li><strong>화면의 아래 절반이 빈 바닥</strong> — 알약이 위쪽 40%에만 놓여 해상도를 낭비했다</li>
+    <li><strong>wrist USB 케이블이 녹화 중 빠졌다</strong></li>
+  </ul>
+  <div class="callout">
+    <span class="label">그래서 바꾼 것</span>
+    <p>
+      환경을 전부 재설계했다 — 트레이·화각·목적지. 세 번째 색으로 <strong>초록</strong>을 넣고,
+      목적지는 <strong>약통 1칸 고정</strong>으로 못 박았다. 환경이 달라졌으니
+      기존 60개는 <strong>섞을 수 없다.</strong> 지우지 않고 <code>v1_pilot/</code>에 남겨뒀다.
+    </p>
+  </div>
+
+  <h3>v2 — 20개 리허설이 물리 문제 5가지를 잡아냈다</h3>
+  <p>
+    본 수집 전에 <strong>20개만 찍어 세팅을 검증</strong>하는 단계를 넣었다.
+    "20개로 성능이 나오나"가 아니라 <strong>"세팅이 세션 내내 안 흔들리나"</strong>를 보는 판이다.
+    이 판단이 옳았다 — 20개로 다음이 전부 측정됐다.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>무엇이</th><th>어떻게 어긋났나</th><th>어떻게 알았나</th></tr></thead>
+      <tbody>
+        <tr><td>top 화각 기준</td><td>기준 파일이 <strong>녹화 전</strong> 저장본이라 실제 학습 화각과 6.4 / 3.2px 차이</td><td>녹화 20개 전수 측정</td></tr>
+        <tr><td>top 카메라</td><td>세션 중 밀림</td><td>구역별 템플릿 매칭</td></tr>
+        <tr><td>매트 · 약통</td><td>매트 아래로 11mm, 약통 6mm — <strong>팔이 밀어올렸다</strong></td><td><code>align_scene.py</code></td></tr>
+        <tr><td><strong>wrist 초점</strong></td><td>선명도 184 (학습 데이터는 1287~5369) — <strong>15배 흐림</strong></td><td>정지 30장 라플라시안 분산</td></tr>
+        <tr><td>홈 자세</td><td>v1 파일럿 값을 그대로 쓰고 있었다 (wrist_roll 2.7도 차이)</td><td>데이터셋 시작 자세 중앙값 대조</td></tr>
+        <tr><td>정책 명령</td><td>깊이축 <strong>66도/프레임</strong> (학습 데이터 최대 0.64)</td><td><code>run_policy.py --trace</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    <strong>다섯 개가 물리 세팅 문제였다.</strong> 데이터를 60개로 늘렸어도 그대로 남았을 것들이다.
+    흐린 wrist 화면으로 실기 평가를 두 번이나 돌린 뒤에야 발견했다.
+  </p>
+
+  <h4>v2가 남긴 좋은 결과</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>항목</th><th>v1 파일럿</th><th>v2</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>최종 loss (ACT)</td><td class="num">0.086 (20K)</td><td class="num">0.071 (30K)</td><td>개선</td></tr>
+        <tr><td>파지 위치 표준편차</td><td class="num">5.9</td><td class="num">11.3</td><td><strong>쏠림 해소</strong></td></tr>
+        <tr><td>5도 구간 커버</td><td class="num">5 / 12</td><td class="num">8 / 12</td><td>고르게 퍼짐</td></tr>
+        <tr><td>학습 속도</td><td class="num">3.39 step/s</td><td class="num">3.38 step/s</td><td>증강 켠 손실 없음</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    실기는 1차 완수 5/15였으나 <strong>화각이 틀린 상태여서 폐기</strong>했고,
+    교정 후 2차에서 <strong>파지 8/15 · 완수 6/15</strong>가 나왔다.
+  </p>
+
+  <div class="callout">
+    <span class="label">v2에서 얻은 가장 큰 것 — 청크 이음매</span>
+    <p>
+      "y축으로 툭 튀는" 증상의 원인이 <strong>액션 청크의 이음매</strong>임을 밝혔다.
+      <code>--temporal-ensemble</code>을 켜자 증상이 사라지고 파지에 성공했다.
+      <strong>재학습이 아니라 추론 설정만 바꿔서</strong> 해결한 첫 사례다.
+    </p>
+  </div>
+
+  <h3>v3 — 흔들릴 수 있는 것을 먼저 없앤다</h3>
+  <p>
+    v3는 데이터를 늘리기 전에 <strong>하드웨어를 못 박는 것</strong>부터 했다.
+  </p>
+  <ul>
+    <li>top 카메라를 <strong>벽에 고정</strong> — 붐암 폐기 (건드릴 때마다 밀렸다)</li>
+    <li>매트와 약통을 <strong>책상에 고정</strong> — 팔이 밀어올린 것이 11mm / 6mm로 측정됐다</li>
+    <li>wrist 렌즈 <strong>초점 링 고정</strong> — 진동에 풀린다</li>
+    <li>기준 화각을 <strong>녹화가 끝난 뒤</strong> 학습 화각으로 다시 저장 (v2의 6px 사고 재발 방지)</li>
+    <li>팔로워 케이블 경로 정리 — 매트 하단을 침범해 정합 패치를 오염시켰다</li>
+  </ul>
+  <p>
+    그 위에서 빨강 29개로 파이프라인을 검증하고, 3색 96개로 늘린 뒤,
+    목표 조건화 문제를 규명하고, <strong>같은 장면 × 3목표 128개</strong>를 더해 224개가 됐다.
+  </p>
+
+  <h4>v3의 성과</h4>
+  <div class="statgrid">
+    <div class="stat"><span class="k">색별 정책 3개</span><span class="v">3.26–5.45배</span><span class="n">자기색 대비 — 실기에서 집는다</span></div>
+    <div class="stat"><span class="k">지각·위치잡기</span><span class="v">+0.76</span><span class="n">화면 기여도 (관절 0.01)</span></div>
+    <div class="stat"><span class="k">원인 규명</span><span class="v">2겹 분리</span><span class="n">주입 방식 + 데이터 구조</span></div>
+    <div class="stat"><span class="k">FiLM 이식</span><span class="v">1.00 → 1.33</span><span class="n">주입 방식 기여분</span></div>
+  </div>
+
+  <div class="callout">
+    <span class="label">세 버전을 관통하는 교훈</span>
+    <p>
+      <strong>두 번의 재시작이 모두 데이터 부족이 아니라 세팅 문제 때문이었다.</strong>
+      v1은 화각이 밀린 걸 모르고 60개를 모았고, v2는 흐린 wrist로 평가를 두 번 돌렸다.
+      데이터를 늘리기 전에 <strong>측정 가능한 것을 전부 측정</strong>하는 절차
+      (<code>preflight.py</code>, <code>align_scene.py</code>, 세션 시작 점검)가 v3에서 자리 잡았고,
+      그 뒤로는 세팅 때문에 데이터를 버린 적이 없다.
+    </p>
+  </div>
+
+  <h3>현재 데이터셋 구성</h3>
+  <p class="sub" style="margin-bottom:20px"><code>1unasy/pill_v3</code> — 224 에피소드 / 245,529 프레임</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>구간</th><th class="num">개수</th><th>성격</th></tr></thead>
+      <tbody>
+        <tr><td>ep 0 – 95</td><td class="num">96</td><td>초기 수집. 배치·개수 모두 랜덤 (트레이에 1~3개)</td></tr>
+        <tr><td>ep 96 – 223</td><td class="num">128</td><td><strong>같은 장면 × 3목표</strong> 32세트 = 집기 96 + 정지 시연 32</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>같은 장면 × 3목표 — 왜 이렇게 찍었나</h4>
+  <p>
+    기존 데이터는 각 배치가 <strong>딱 한 번, 한 목표로만</strong> 등장했다.
+    그래서 "이 사진 = 이 궤적"으로 외워도 학습 데이터가 전부 맞는다. 목표를 읽을 이유가 없다.
+    같은 배치에 세 목표를 붙이면 장면만으로는 답이 셋이라, <strong>목표를 읽어야만 손실이 준다.</strong>
+  </p>
+  <pre><code>한 세트   알약 3개를 표대로 놓고 → 순서대로 3번 찍기
+          매번 집은 알약을 같은 칸·같은 방향으로 되돌린다   ← 제일 중요
+          세트 끝에 정지 시연 1개</code></pre>
+
+  <h4>정지 시연 32개 — 담고 나서 멈추게 하기</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>유형</th><th class="num">개수</th><th>장면</th></tr></thead>
+      <tbody>
+        <tr><td>목표만없음</td><td class="num">21</td><td>목표 색만 약통에, 나머지 2개는 트레이에</td></tr>
+        <tr><td>두개담김</td><td class="num">3</td><td>목표 + 1색이 약통에, 1개만 트레이에 (2색 처방 직후)</td></tr>
+        <tr><td>빈트레이</td><td class="num">8</td><td>세 개 다 약통에 (3색 처방 직후)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    전부 <strong>리더암을 홈 자세에 두고 15초간 전혀 움직이지 않는다</strong>(449프레임).
+    과제 문자열은 이미 담은 색을 가리킨다 — "목표가 트레이에 없으면 가만히 있어라"를 가르친다.
+  </p>
+
+  <h4>색 균형</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>색</th><th class="num">에피소드</th><th class="num">프레임</th><th class="num">원-핫 차원</th></tr></thead>
+      <tbody>
+        <tr><td><span class="swatch sw-r"></span>빨강</td><td class="num">79</td><td class="num">88,533</td><td class="num">[0,1,0]</td></tr>
+        <tr><td><span class="swatch sw-g"></span>초록</td><td class="num">73</td><td class="num">77,780</td><td class="num">[0,0,1]</td></tr>
+        <tr><td><span class="swatch sw-y"></span>노랑</td><td class="num">72</td><td class="num">79,216</td><td class="num">[1,0,0]</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <span class="label">개수 지름길을 확인하고 기각한 사례</span>
+    <p>
+      새로 찍은 128개만 보면 <strong>집기는 전부 트레이 3개 상태에서 시작</strong>하고 정지는 전부 3개 미만이다.
+      "3개면 집고 아니면 멈춰라"만 배우면 손실이 0이 되는 구조로 보였다.
+      그런데 <strong>예전 96개를 열어보니</strong> 1개·2개에서 집는 장면이 이미 많았다(48개 표본에서 1개 ~10 · 2개 ~22).
+      지름길은 존재하지 않았고, 추가 촬영 20개 제안은 철회했다.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="related">
+  <h2>6. 선행 연구와 기여</h2>
+  <p class="sub">우리 결과는 어디에 서 있나</p>
+
+  <p>
+    한 줄로 요약하면 — <strong>목표 조건화(원-핫·언어 모두)가 학습되지 않았고,
+    증강·스텝·에폭·사전학습 언어모델 어느 것으로도 못 고쳤다. 원인은 데이터 구조다.</strong>
+  </p>
+
+  <div class="callout">
+    <span class="label">저널 vs 학회</span>
+    <p>
+      이 분야의 원전(ACT, BC-Z, CLIPort, Causal Confusion)은 대부분 CoRL·NeurIPS·RSS 등
+      <strong>학회</strong> 논문이다. 국제학술지 등재본만 고르면 원전이 빠지므로,
+      <strong>저널 3편을 주축</strong>으로 하고 학회 원전은 보조로 표기했다.
+    </p>
+  </div>
+
+  <h3 id="papers">저널 3편</h3>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>Geirhos et al. (2020) — 「Shortcut Learning in Deep Neural Networks」</h4>
+      <span class="chip ok">핵심 근거</span>
+    </div>
+    <dl class="fields">
+      <dt>출처</dt><dd><em>Nature Machine Intelligence</em> 2:665–673</dd>
+      <dt>주장</dt><dd>신경망은 벤치마크에서는 통하지만 조건이 바뀌면 무너지는 <strong>지름길 규칙</strong>을 학습한다. 딥러닝의 여러 실패가 이 한 문제의 다른 증상이다.</dd>
+      <dt>대응</dt><dd>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th></th><th>논문 (별/달 분류)</th><th>우리 실험</th></tr></thead>
+            <tbody>
+              <tr><td>써야 할 단서</td><td>모양</td><td>목표 (원-핫/언어)</td></tr>
+              <tr><td>실제로 쓴 지름길</td><td>위치</td><td>장면 자체</td></tr>
+              <tr><td>왜 통했나</td><td>학습셋에서 위치가 정답과 완전 상관</td><td>각 장면이 딱 한 번, 한 목표로만 등장</td></tr>
+              <tr><td>결과</td><td>위치 바꾸면 오분류</td><td>목표 바꿔도 같은 알약 (1.00배)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>구조가 동일하다.</strong> 우리 결과는 이 논문의 지름길 학습이 로봇 조작에서 목표 조건화를 무력화하는 형태로 나타난 사례다.</p>
+      </dd>
+      <dt>차이</dt><dd>논문은 <strong>분포 밖 테스트셋</strong>으로 진단한다(o.o.d. test). 우리는 새 데이터 없이 <strong>같은 관측에 목표만 바꿔 넣는 개입</strong>으로 진단했다 — 더 싸고 직접적이다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>Yao et al. (2025) — 「Long-Horizon Language-Conditioned Imitation Learning」</h4>
+      <span class="chip warn">진단 층위가 다름</span>
+    </div>
+    <dl class="fields">
+      <dt>출처</dt><dd><em>IEEE/ASME Transactions on Mechatronics</em> · DOI 10.1109/TMECH.2025.3547047</dd>
+      <dt>주장</dt><dd>언어 조건화 모방학습은 사람 시연의 <strong>다중모드성</strong>과 <strong>데이터 부족</strong> 때문에 어렵다. 행동 공간을 이산화하고 자기회귀 샘플링하는 트랜스포머 정책으로 다룬다.</dd>
+      <dt>대비</dt><dd>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th></th><th>이 논문</th><th>우리</th></tr></thead>
+            <tbody>
+              <tr><td>문제 진단</td><td>다중모드성, 데이터 부족</td><td><strong>목표 자체가 무시됨</strong></td></tr>
+              <tr><td>해법</td><td>행동 공간 이산화 + 자기회귀</td><td>데이터 구조 변경</td></tr>
+              <tr><td>접근</td><td>아키텍처 개선</td><td>아키텍처를 바꿔도 안 됨을 보임</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>우리는 아키텍처를 <strong>세 가지</strong>(ACT 원-핫, ACT 색별, SmolVLA 언어) 써봤고 조건화만 놓고 보면 전부 1.00배였다. 이 계열의 개선이 유효하려면 <strong>그 이전에 목표가 읽히고 있는지</strong>를 먼저 확인해야 한다 — 우리 지표가 그 확인 절차를 제공한다.</p>
+      </dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>Yao et al. (2026) — 「Bridging language and action」 서베이</h4>
+      <span class="chip warn">지형 파악</span>
+    </div>
+    <dl class="fields">
+      <dt>출처</dt><dd><em>International Journal of Robotics Research</em> · DOI 10.1177/02783649261468360</dd>
+      <dt>내용</dt><dd>언어 조건화 로봇 조작 전반의 조망 — 벤치마크·언어 모듈·지각 모듈·실기 여부·기반모델 사용을 표로 정리.</dd>
+      <dt>위치</dt><dd>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>연구</th><th class="num">과제 수</th><th>규모</th></tr></thead>
+            <tbody>
+              <tr><td>BC-Z (CoRL 2021)</td><td class="num">100</td><td>대규모 실기</td></tr>
+              <tr><td>CLIPort (CoRL 2021)</td><td class="num">10</td><td>시뮬레이션</td></tr>
+              <tr class="hi"><td>우리</td><td class="num">3</td><td>실기 224 에피소드</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <strong>결정적 차이는 과제 수가 아니라 장면–목표 대응 구조다.</strong>
+          과제가 100개면 같은 장면이 여러 지시문과 짝지어질 확률이 높아져,
+          지시문을 읽지 않으면 손실이 줄지 않는다. 우리는 3색인데다 각 장면이 한 번씩만 나와서
+          지시문을 무시해도 학습 손실이 전부 맞았다.
+        </p>
+        <p><strong>대규모 연구는 데이터 규모가 이 문제를 우연히 가려준다.</strong> 소규모에서는 그대로 드러난다.</p>
+      </dd>
+    </dl>
+  </div>
+
+  <h3 id="origins">학회 원전 (보조)</h3>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>de Haan, Jayaraman, Levine (2019) — 「Causal Confusion in Imitation Learning」</h4>
+      <span class="chip ok">두 번 재현됨</span>
+      <span class="date">NeurIPS</span>
+    </div>
+    <dl class="fields">
+      <dt>주장</dt><dd>정보를 <strong>더</strong> 주면 성능이 <strong>나빠질</strong> 수 있다 (causal misidentification).</dd>
+      <dt>재현</dt><dd>
+        <pre><code>① 회복 시연 7개를 추가했더니
+     색 구분 5.45배 → 3.85배로 나빠지고, 정지 조건까지 잃었다
+
+② 학습을 오래 했더니
+     목표 바꿀 때 액션 변화 0.05(40K) → 0.02(128K) — 목표를 더 무시한다</code></pre>
+        <p>②가 특히 이 논문의 주장을 강화한다. <strong>손실은 계속 내려가는데(0.057) 목표는 점점 더 안 본다</strong> — 지름길이 깊어진다.</p>
+      </dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>Zhao et al. (2023) — ACT / ALOHA</h4>
+      <span class="chip ok">우리가 쓴 정책</span>
+      <span class="date">RSS</span>
+    </div>
+    <dl class="fields">
+      <dt>가져온 것</dt><dd>Action chunking, CVAE, temporal ensembling — 전부 이 논문 것이다.</dd>
+      <dt>안 쓴 것</dt><dd>
+        <p><code>replace_final_stride_with_dilation</code>은 원 논문에 있으나 lerobot 기본값이 꺼져 있다. 켜면 특징 격자가 stride 32 → 16이 된다.</p>
+        <pre><code>지금:  32px × 0.65mm/px = 20.8mm   ← 잡으려는 오차(5~10mm)보다 크다
+켜면:  16px × 0.65mm/px = 10.4mm</code></pre>
+        <p><strong>조건화가 아니라 정밀도 문제에만 유효하다.</strong> 학습 시간 1.5~2배.</p>
+      </dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head">
+      <h4>Perez et al. (2018) — 「FiLM: Visual Reasoning with a General Conditioning Layer」</h4>
+      <span class="chip ok">이식해서 사용</span>
+      <span class="date">AAAI</span>
+    </div>
+    <dl class="fields">
+      <dt>가져온 것</dt><dd>조건 벡터로 시각 특징의 <strong>모든 채널</strong>에 스케일·시프트를 거는 방식. lerobot ACT에 직접 이식했다.</dd>
+      <dt>효과</dt><dd>자기색 대비 1.00 → 1.33배. 목표 교체 시 행동 변화 Δ가 0.02 → 0.63으로 <strong>31배</strong>.</dd>
+    </dl>
+  </div>
+
+  <h3 id="contrib">우리 기여로 주장할 수 있는 것</h3>
+
+  <h4>① 값싼 조건화 진단 지표</h4>
+  <p>
+    같은 관측에 <strong>목표만 바꿔 넣어</strong> 예측 변화를 재는 개입.
+    로봇도, 새 데이터도, 재학습도 필요 없다. 체크포인트만 있으면 몇 분이면 된다.
+  </p>
+  <p>
+    대부분의 논문은 <strong>최종 성공률만</strong> 보고한다. 성공률이 낮을 때 그것이
+    "조건화 실패"인지 "정밀도 부족"인지 구분해주지 않는다. <strong>이 지표는 그 둘을 가른다.</strong>
+    실제로 우리 정책은 <strong>지각·위치잡기는 처음부터 됐고</strong>(화면 기여 +0.76)
+    조건화만 안 됐는데, 성공률만 봤다면 둘을 구분하지 못했을 것이다.
+  </p>
+
+  <h4>② 통제된 반증</h4>
+  <p>
+    조건을 하나씩 바꿔가며 전부 실패함을 보였다 — 증강 ON/OFF, 스텝 40K~128K,
+    에폭 2.8~9.0, 사전학습 언어모델(SmolVLA)까지. <strong>에폭을 맞춘 것</strong>이 핵심이다.
+  </p>
+
+  <h4>③ 실기 영상 증거</h4>
+  <p>
+    <code>report/fig_onehot_ignores_goal.png</code> — 같은 배치에서 원-핫만 바꿨는데
+    세 번 다 노랑을 집었다. 숫자보다 전달력이 크다.
+  </p>
+
+  <div class="callout">
+    <span class="label">발표에서 쓸 한 문단</span>
+    <p>
+      목표 조건화 실패는 Geirhos et al.(<em>Nature Machine Intelligence</em>, 2020)이 정리한
+      <strong>지름길 학습</strong>의 로봇 조작 판 사례로 볼 수 있다. 우리는 같은 관측에 목표만 바꿔
+      넣는 개입으로 이를 <strong>재학습 없이 정량화</strong>했고(자기색 대비 1.00배),
+      증강·스텝·에폭·사전학습 언어모델을 각각 통제해 전부 실패함을 보였다.
+      대규모 언어 조건화 연구(BC-Z 100과제, CLIPort 10과제)에서 이 문제가 드러나지 않는 것은
+      데이터 규모가 장면–목표 대응을 자연히 다양하게 만들기 때문으로 보이며,
+      소규모(96 에피소드) 환경에서는 <strong>데이터 구조를 명시적으로 설계해야</strong> 함을 시사한다.
+    </p>
+  </div>
+
+  <div class="callout" style="border-left-color: var(--red); background: var(--red-bg)">
+    <span class="label" style="color: var(--red)">정직하게 밝힐 것</span>
+    <p>
+      <strong>원인 지목까지는 했으나, 고쳐서 증명하지는 아직 못했다.</strong>
+      같은 장면 × 3목표 128 에피소드를 새로 찍어 재학습을 돌리는 중이고,
+      자기색 대비가 1.33배를 유의하게 넘는지가 유일한 미검증 부분이다. 발표에 명시할 것.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="ts">
+  <h2>7. 트러블슈팅</h2>
+  <p class="sub">증상 → 원인 → 근거 → 조치</p>
+
+  <h3 id="ts-core">대표 사례</h3>
+
+  <div class="case">
+    <div class="case-head"><h4>재학습은 진단이 아니다</h4><span class="chip ok">해결</span><span class="date">08-05</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>정책이 실패할 때마다 "데이터를 더 모으고 재학습하자"를 3일간 반복했다.</dd>
+      <dt>원인</dt><dd>재학습으로 가설을 검증하려 했다. 한 번에 8시간이 든다.</dd>
+      <dt>조치</dt><dd><code>probe_policy.py</code> — 체크포인트에서 직접 계측. 카메라를 하나씩 가리고, 이미지를 픽셀 단위로 밀고, 목표만 바꿔 출력 변화를 잰다.</dd>
+      <dt>근거</dt><dd>재학습으로 검증하려던 가설 <strong>두 개가 다 틀렸다.</strong> 그대로 갔으면 8시간을 버렸다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>목표가 없으면 멈추지 못한다 (인과 혼동)</h4><span class="chip warn">데이터로 대응 중</span><span class="date">08-07</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>트레이에 빨강이 없는데 빨강 정책이 <strong>회복 동작을 무한 반복</strong>했다. 색 구분은 됐다 — 초록으로 가지는 않았다.</dd>
+      <dt>원인</dt><dd>학습 96개가 전부 "목표가 트레이에 있는" 상태였고, 회복 시연 7개가 "실패하면 다시 시도해라"를 가르쳤다. 목표가 없는 상황은 정의된 적이 없다.</dd>
+      <dt>근거</dt><dd>회복 시연이 없는 <code>act_v3_red29</code>는 담고 나서 <strong>멈췄다</strong> → 회복 능력과 정지 조건은 맞바꿈 관계다.</dd>
+      <dt>조치</dt><dd>정지 시연 32개를 새로 촬영. CLAUDE.md 7번에 미리 적어둔 위험(과거 사탕 프로젝트)이 그대로 재현된 사례다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>목표 조건화 실패 — 원인을 두 겹으로 분리</h4><span class="chip warn">1/2 해결</span><span class="date">08-08 ~ 09</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>정책 하나로 3색을 시키면 지시를 무시하고 아무거나 집는다. 자기색 대비 1.00배.</dd>
+      <dt>원인</dt><dd>
+        <p><strong>① 주입 방식</strong> — 목표가 인코더 토큰 603개 중 1개(0.17%). FiLM으로 바꾸니 1.00 → 1.33배.</p>
+        <p><strong>② 데이터 구조</strong> — 각 배치가 한 번·한 목표로만 등장. 장면만 외워도 손실이 0.</p>
+      </dd>
+      <dt>근거</dt><dd><code>report/fig_onehot_ignores_goal.png</code> — 같은 배치에서 원-핫만 바꿨는데 <strong>세 목표 전부 노랑을 집었다.</strong></dd>
+      <dt>조치</dt><dd>②를 고치려 같은 장면 × 3목표 128개 촬영 → 재학습 진행 중.</dd>
+    </dl>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h3 id="ts-data">데이터 무결성</h3>
+
+  <div class="case">
+    <div class="case-head"><h4>top 화면이 +96px 밀린 채 저장됐다</h4><span class="chip open">원인 미상 · 검출로 대응</span><span class="date">08-09 ~ 10</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>128개 중 3개에서 화면 전체가 가로로 96px 밀렸다. 약통이 화면 끝에 잘려 나갔다.</dd>
+      <dt>진단</dt><dd>
+        <p>책상에 고정된 <strong>로봇 본체까지 같이 밀렸다</strong>(+96.4px) → 물체가 아니라 화면이 이동. 배율·회전은 0.2% 이내.</p>
+        <p>기각한 가설: 카메라 물리 이동(사용자가 건드린 적 없음), 크롭 흔들림(10번 열어도 항상 +0.5), SIGTERM/SIGKILL 종료(6회 시험 전부 정상), wrist USB 재등록(시각 대조 무관), 해상도 변경(전 영상 640×480 동일).</p>
+        <p><strong>재현 조건은 찾았다</strong> — 프레임을 읽은 뒤 해상도를 설정하면 정확히 +96.5px. 다만 lerobot의 어느 경로가 그 상태가 되는지는 못 짚었다.</p>
+      </dd>
+      <dt>조치</dt><dd>원인 대신 <strong>결과를 검사</strong>. <code>check_last_top.py</code>가 저장 직후 기준 프레임과 위상 상관을 재서 5px을 넘으면 경고한다. 카메라를 열지 않아 녹화에 영향이 없다. 밀린 3개는 제거 후 재촬영.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>미리보기가 카메라를 붙잡아 녹화가 통째로 날아갔다</h4><span class="chip ok">해결</span><span class="date">08-09</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>녹화 창은 뜨는데 에피소드가 저장되지 않았다. <strong>세 번 반복</strong>됐다.</dd>
+      <dt>원인</dt><dd>배치 확인용 <code>preview_grid.py</code>가 켜진 채로 녹화를 시작하면 카메라가 이미 점유돼 lerobot이 열지 못한다.</dd>
+      <dt>조치</dt><dd>녹화 직전 <code>kill_preview()</code>로 자동 종료. 사람이 기억할 필요가 없어졌다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>볼펜이 화면에 들어와 목표와 상관됐다</h4><span class="chip ok">해결</span><span class="date">08-10</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>한 세트의 3개 중 2개에만 트레이 위쪽에 볼펜이 놓여 있었다.</dd>
+      <dt>왜 문제인가</dt><dd>같은 세트 안에서 <strong>볼펜 유무가 목표 색과 상관</strong>된다. 정책이 목표 벡터 대신 "화면 위에 하얀 막대가 있나"로 색을 구분할 수 있다 — 이번 촬영이 없애려던 지름길 그 자체.</dd>
+      <dt>검출</dt><dd>에피소드별 <strong>픽셀 중앙값 배경</strong>(움직이는 팔이 지워진다)을 만들어 직전 세트와 차분. 트레이 위쪽 <code>(225, 0)</code>에 29×17 덩어리가 2개 에피소드에만 존재.</dd>
+      <dt>조치</dt><dd>해당 2개 제거 후 재촬영. 이후 224개 전수 검사에서 이물질 0건.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>bash 연관배열 선언 누락으로 색 매핑이 깨졌다</h4><span class="chip ok">해결</span><span class="date">08-09</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>촬영 스크립트가 시작하자마자 <code>빨강: syntax error: operand expected</code>로 터졌다.</dd>
+      <dt>원인</dt><dd><code>declare -A</code> 없이 <code>EN[빨강]=red</code>를 쓰면 bash가 인덱스 배열로 만들고 <strong>한글 첨자를 산술식으로 해석</strong>한다.</dd>
+      <dt>조치</dt><dd><code>declare -A EN=( [빨강]=red [초록]=green [노랑]=yellow )</code>. 첫 에피소드를 찍기 전에 잡아서 데이터 오염은 없었다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>중간 에피소드를 지우자 데이터가 깨졌다</h4><span class="chip ok">해결</span><span class="date">08-10</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>삭제 도구를 돌린 뒤 프레임 수가 244,088이어야 하는데 <strong>1,224,970</strong>이 나왔다.</dd>
+      <dt>원인</dt><dd>lerobot은 <strong>파일 하나에 에피소드를 여러 개</strong> 담는다(초기 96개는 최대 20개). "에피소드마다 파일을 다시 쓰는" 방식이 같은 파일을 여러 번 덮어썼다.</dd>
+      <dt>조치</dt><dd>백업에서 복원 후 <strong>파일 단위</strong> 처리로 재작성. 전역 인덱스는 <code>start[에피소드] + frame_index</code>로 계산해 파일 안에 몇 개가 들어 있든 정확하다. 재작성 후 메타·데이터·로드 3중 검증 통과.</dd>
+    </dl>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h3 id="ts-hw">하드웨어</h3>
+
+  <div class="case">
+    <div class="case-head"><h4>wrist 카메라가 하루 수십 번 끊겼다</h4><span class="chip ok">해결</span><span class="date">08-07 ~ 09</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd><code>error -71</code>이 1초에 22번, 장치번호가 계속 올라가다 목록에서 사라졌다. 30분에 12번 재등록.</dd>
+      <dt>진단</dt><dd><code>device descriptor read/64, error -71</code>은 드라이버가 개입하기도 전, USB 최초 협상에서의 실패다. <strong>소프트웨어로 못 고친다.</strong> 포트를 옮겨도 그대로 → 본체 문제 아님.</dd>
+      <dt>조치</dt><dd>케이블 교체. 이후 6시간 38분 동안 재등록 7회로 감소했고, 저장된 데이터 손상은 0건.</dd>
+      <dt>참고</dt><dd>초기에는 USB 자동절전도 원인이었다 — <code>echo on | sudo tee /sys/bus/usb/devices/*/power/control</code>. 절전이 켜진 장치만 끊겼고 모터는 멀쩡했다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>카메라와 로봇이 같은 허브를 나눠 썼다</h4><span class="chip ok">해결</span><span class="date">08-09</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>wrist가 21fps (학습 데이터는 27fps). 카메라가 끊길 때 로봇 통신도 함께 위험했다.</dd>
+      <dt>원인</dt><dd><code>lsusb -t</code>로 확인 — 한 허브에 카메라와 팔이 같이 물려 대역폭을 나눠 쓰고 있었다.</dd>
+      <dt>조치</dt><dd>카메라를 본체 포트에 직접 연결. 포트를 나누면 30fps.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>12번 모터가 죽은 것처럼 보였다</h4><span class="chip ok">해결</span><span class="date">초기</span></div>
+    <dl class="fields">
+      <dt>원인</dt><dd>케이블 문제였다. 모터가 아니다.</dd>
+      <dt>교훈</dt><dd>장치가 안 잡히면 <strong>케이블부터</strong>. 이 프로젝트에서 케이블이 원인이었던 사례가 3건이다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>카메라 장치 번호가 재부팅마다 바뀐다</h4><span class="chip ok">해결</span><span class="date">상시</span></div>
+    <dl class="fields">
+      <dt>조치</dt><dd><code>/dev/video*</code> 대신 <strong><code>/dev/v4l/by-id/...</code></strong>를 쓴다. 모든 스크립트가 by-id 경로로 통일돼 있다.</dd>
+    </dl>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h3 id="ts-sw">소프트웨어 · 조작</h3>
+
+  <div class="case">
+    <div class="case-head"><h4>한글로 타자를 치면 로봇이 종료됐다</h4><span class="chip ok">해결</span><span class="date">초기</span></div>
+    <dl class="fields">
+      <dt>원인</dt><dd>pynput은 <strong>물리 키</strong>를 읽는다. 한글 두벌식에서 <code>ㅂ</code>은 물리 <code>q</code>(종료), <code>ㄴ</code>은 <code>s</code>다. 다른 창에 한글만 쳐도 종료 신호가 나갔다.</dd>
+      <dt>조치</dt><dd><code>--local-keys</code>로 전역 리스너를 끈다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>그리퍼가 잡을 때 팔을 멈췄더니 교착</h4><span class="chip ok">해결</span><span class="date">초기</span></div>
+    <dl class="fields">
+      <dt>원인</dt><dd>팔이 멈춤 → 장면이 안 변함 → 그리퍼가 완료 신호를 못 받음 → 영원히 멈춤.</dd>
+      <dt>조치</dt><dd><code>--no-freeze-on-grasp</code>를 항상 준다.</dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>계측값을 실기 검증 없이 적용해 팔이 안 내려갔다</h4><span class="chip ok">해결</span><span class="date">08-05</span></div>
+    <dl class="fields">
+      <dt>원인</dt><dd>시간 앙상블 계수 <code>-0.05</code>는 계측으로 뽑았지만 실기 검증을 안 했다. 보정식도 파지 자세 범위로 적합해놓고 홈 자세에 적용해 외삽으로 폭주했다.</dd>
+      <dt>조치</dt><dd>계수는 0.01로 되돌리고, 보정은 접근 진행도를 곱해 파지 근처에서만 걸리게 했다. <strong>계측값도 실기로 확인하기 전엔 쓰지 않는다.</strong></dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>rerun 뷰어에 검은 화면 두 개만 나왔다</h4><span class="chip ok">해결</span><span class="date">08-10</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>녹화 화면에 카메라 영상 대신 빈 패널 두 개.</dd>
+      <dt>원인</dt><dd>화면 배치(blueprint)를 지정하면서 <strong>존재하지 않는 경로</strong>를 가리켰다. 실제 경로는 관측 키에 따라 <code>observation.top</code>일 수도 <code>observation.images.top</code>일 수도 있다.</dd>
+      <dt>조치</dt><dd>배치 지정을 완전히 제거하고 rerun 자동 배치로 복귀. 저장된 배치 파일(<code>~/.local/share/rerun/blueprints/</code>)도 삭제해야 반영된다 — <strong>코드를 되돌려도 저장된 배치가 남아 있으면 계속 적용된다.</strong></dd>
+    </dl>
+  </div>
+
+  <div class="case">
+    <div class="case-head"><h4>v4l2-ctl 스트리밍 시험이 멈춰 녹화가 시작되지 않았다</h4><span class="chip ok">해결</span><span class="date">08-10</span></div>
+    <dl class="fields">
+      <dt>증상</dt><dd>엔터를 눌러도 녹화로 넘어가지 않았다. <code>fuser</code>로 보니 <code>v4l2-ctl</code>이 카메라를 붙잡은 채 멈춰 있었다.</dd>
+      <dt>원인</dt><dd>카메라 포맷을 미리 고정하려고 넣은 <code>--stream-mmap --stream-count=40</code>이 top 카메라에서 무한 대기.</dd>
+      <dt>조치</dt><dd><code>timeout</code>을 걸고 실패 시 포맷 설정만 하도록 변경. 이후 <strong>이 단계 자체를 제거</strong>했다 — 하루 종일 128개를 정상 촬영한 설정에 없던 것이라, 검증되지 않은 추가는 되돌리는 게 맞았다.</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="verify">
+  <h2>8. 검증 방법론</h2>
+  <p class="sub">촬영이 끝난 224개를 어떻게 믿을 수 있게 만들었나</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>검사</th><th>방법</th><th>결과</th></tr></thead>
+      <tbody>
+        <tr><td>메타 무결성</td><td>번호 연속성 · 프레임 구간 연속성 · 합계 일치</td><td>이상 없음</td></tr>
+        <tr><td>과제 순서</td><td><code>layouts.json</code> 설계와 실제 저장된 task 문자열 대조</td><td>128개 전부 일치</td></tr>
+        <tr><td>영상 무결성</td><td>ffprobe 패킷 수 vs 기록된 길이 (448개 파일)</td><td>프레임 부족 0건</td></tr>
+        <tr><td>이미지·동작 짝</td><td>타임스탬프 간격이 전부 0.03333인지</td><td>전부 균일</td></tr>
+        <tr><td>카메라 정렬</td><td>기준 프레임과 위상 상관 (평행이동)</td><td>212개 정상 / 12개 세로 39px</td></tr>
+        <tr><td>배율·회전</td><td>ECC 어파인 정합 (위상 상관은 배율을 못 잡는다)</td><td>0.2% 이내</td></tr>
+        <tr><td>이물질</td><td>픽셀 중앙값 배경 차분 + 밝은 물체 검출</td><td>0건</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <span class="label">검출기는 반드시 정답을 아는 표본으로 먼저 검증한다</span>
+    <p>
+      "이상 없음"이 검출기가 눈이 먼 결과일 수 있다. 이물질 검출기는 <strong>볼펜이 있는 걸 아는 영상</strong>으로
+      시험해 검출되는 것을 확인한 뒤에야 "224개 깨끗"을 신뢰했다.
+      실제로 첫 알약 개수 검출기는 노랑을 전혀 못 잡아 폐기했다.
+    </p>
+  </div>
+
+  <h4>영상이 데이터보다 긴 5개 — 문제가 아니었다</h4>
+  <p>
+    ep 90 · 91 · 146 · 165 · 222는 영상 구간이 데이터보다 1.3~22초 길다.
+    처음엔 이미지·동작 짝이 어긋난 것으로 의심했으나, 타임스탬프가 전부 균일하고
+    데이터셋이 실제로 반환하는 프레임이 정확한 시각과 일치했다.
+    <strong>데이터가 끝난 뒤 영상만 더 녹화된 것</strong>이고, 남는 부분은 쓰이지 않는다.
+  </p>
+
+  <h4>남겨둔 것 — ep 0~11의 세로 39px</h4>
+  <p>
+    초기 12개는 카메라 높이가 달라 세로로 39px(화면의 8%) 어긋나 있다.
+    <strong>빼지 않았다.</strong> 매트도 약통도 온전히 보이고 잘린 곳이 없어,
+    카메라가 조금 움직여도 작동하게 만드는 <strong>증강에 가깝다.</strong>
+    224개 중 12개(5%)로 비중도 작다.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="tools">
+  <h2>9. 도구</h2>
+  <p class="sub">이 프로젝트에서 만든 것들</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>파일</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td><code>probe_policy.py</code></td><td>체크포인트에서 직접 계측 — 카메라 가리기, 이미지 이동, 목표 교체</td></tr>
+        <tr><td><code>make_onehot.py</code></td><td>task 문자열 → <code>observation.environment_state</code> 원-핫 부착</td></tr>
+        <tr><td><code>record_sets.sh</code></td><td>같은 장면 × 3목표 촬영 안내 (32세트)</td></tr>
+        <tr><td><code>resume_set.sh</code></td><td>세트 중간부터 이어찍기 — 이미 찍은 색은 건너뛴다</td></tr>
+        <tr><td><code>preview_grid.py</code></td><td>top 화면에 배치 격자·목표 위치 겹쳐보기</td></tr>
+        <tr><td><code>align_top.py</code></td><td>기준 프레임을 반투명으로 겹쳐 카메라 위치 복구</td></tr>
+        <tr><td><code>check_last_top.py</code></td><td>저장 직후 화면 밀림 검사 (카메라를 열지 않는다)</td></tr>
+        <tr><td><code>remove_episodes.py</code></td><td>중간 에피소드 삭제 + 전체 재번호 (파일 단위 처리)</td></tr>
+        <tr><td><code>fit_bias.py</code></td><td>정책의 구역별 편향을 학습 데이터로 계산 (로봇 없이)</td></tr>
+        <tr><td><code>demo_fresh.sh</code></td><td>색마다 카메라를 다시 잡고 하나씩 시연</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>lerobot 로컬 패치 — 재설치하면 날아간다</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>파일</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td><code>policies/act/configuration_act.py</code></td><td><code>film_conditioning</code> 플래그 (기본 꺼짐)</td></tr>
+        <tr><td><code>policies/act/modeling_act.py</code></td><td>FiLM 변조 경로</td></tr>
+        <tr><td><code>cameras/opencv/camera_opencv.py</code></td><td>카메라 자동 복구</td></tr>
+        <tr><td><code>utils/control_utils.py</code></td><td>ESC 2초 내 두 번</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>전부 <code>*.orig</code> 백업이 옆에 있다.</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="open">
+  <h2>10. 미해결과 다음</h2>
+
+  <h4>진행 중</h4>
+  <p>
+    <code>train/act_film_224</code> — ACT + FiLM, 새 데이터 224개(245,529프레임), 증강 ON,
+    배치 8, <strong>200,000 스텝 = 6.5 에폭 ≈ 16시간 30분</strong>, 1만 스텝마다 저장.
+  </p>
+  <p>
+    이번 학습의 변수는 <strong>데이터 구조 하나뿐</strong>이다. 주입 방식(FiLM)도 증강도 배치도 그대로다.
+    그래서 결과가 1.33배를 넘으면 "데이터 구조가 원인이었다"를 직접 증명한다.
+    지난번엔 40K에서 이미 실패가 보였으므로 <strong>40~60K쯤에서 판단이 선다.</strong>
+  </p>
+
+  <h4>미해결</h4>
+  <ul>
+    <li><strong><code>prescribe.py</code>가 안 움직인다</strong> — GPU 0% / CPU 100%로 돌기만 한다. 카메라 가설은 기각됐고 원인 미상. 시연은 검증된 <code>demo_chain.sh</code>로 우회.</li>
+    <li><strong>top 화면 +96px 밀림의 근본 원인</strong> — 재현 조건은 찾았으나 lerobot의 어느 경로인지 미확인. 검출로 대응 중.</li>
+    <li><strong>초록 정밀도</strong> — 초록으로 가긴 하는데 정확히 못 집는다. 흰 캡슐에 초록 끝이라 배경과 덜 구분되는 것으로 보인다(지표도 셋 중 가장 낮은 3.26배).</li>
+    <li><strong>오프라인 지표와 실기의 불일치</strong> — 지표는 "학습 장면의 궤적 재현"을 재고 실기는 새 배치다. <strong>지표는 방향, 판정은 실기.</strong></li>
+  </ul>
+
+  <h4>다음 단계</h4>
+  <ol>
+    <li>체크포인트별 자기색 대비를 재서 <strong>스텝 대비 곡선</strong>을 그린다 — 발표의 핵심 그림</li>
+    <li>같은 데이터로 색별 정책 3개를 다시 학습해 상한선 확인</li>
+    <li>SmolVLA를 에폭 맞춰 재학습 (원본 <code>pill_v3</code> 사용, 원-핫 불필요)</li>
+    <li>정지 시연이 실제로 정지를 만드는지 실기 검증</li>
+  </ol>
+
+  <div class="callout">
+    <span class="label">이 프로젝트의 이야기</span>
+    <p>
+      "이미 증명된 걸 재현하는 것"이 아니라 <strong>실패 → 진단 → 개선의 반복</strong>이 핵심이다.
+      목표 조건화 실패는 Geirhos(2020, <em>Nature Machine Intelligence</em>)의 지름길 학습이
+      로봇 목표 조건화에서 나타난 사례다. 대규모 연구는 데이터 규모가 이 문제를 우연히 가려주지만,
+      소규모에서는 그대로 드러난다. 기여는 세 가지 — <strong>재학습 없는 개입형 진단 지표</strong>,
+      <strong>증강·스텝·에폭을 통제한 반증</strong>, <strong>실기 영상 증거</strong>.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="end">
+  OMX 알약 조제 모방학습 · 2026-08-10 작성 · pill_v3 224 에피소드 기준<br>
+  상세 경위는 <code>WORKLOG_*.md</code> · 선행 연구 비교는 <code>RELATED_WORK.md</code>
+</footer>
+
+</div>

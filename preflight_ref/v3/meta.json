@@ -1,0 +1,20 @@
+{
+ "top": {
+  "mean": 134.74108327346744,
+  "sharpness_min": 582.7448193009695,
+  "sharpness_med": 603.9583951975399,
+  "sharpness_max": 672.4605551533591,
+  "n_episodes": 29
+ },
+ "wrist": {
+  "mean": 131.26766216175767,
+  "sharpness_min": 1249.8954229268388,
+  "sharpness_med": 2586.516978379313,
+  "sharpness_max": 4790.645815882268,
+  "n_episodes": 29
+ },
+ "_source": {
+  "repo_id": "1unasy/pill_v3",
+  "at_sec": 1.0
+ }
+}

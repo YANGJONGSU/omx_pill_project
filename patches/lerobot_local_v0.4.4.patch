@@ -1,0 +1,299 @@
+diff --git a/src/lerobot/cameras/opencv/camera_opencv.py b/src/lerobot/cameras/opencv/camera_opencv.py
+index f3289ddc..6d3c7d68 100644
+--- a/src/lerobot/cameras/opencv/camera_opencv.py
++++ b/src/lerobot/cameras/opencv/camera_opencv.py
+@@ -111,6 +111,7 @@ class OpenCVCamera(Camera):
+         self.videocapture: cv2.VideoCapture | None = None
+ 
+         self.thread: Thread | None = None
++        self.recovering: bool = False   # [로컬 패치] 카메라 재연결 중
+         self.stop_event: Event | None = None
+         self.frame_lock: Lock = Lock()
+         self.latest_frame: NDArray[Any] | None = None
+@@ -131,6 +132,11 @@ class OpenCVCamera(Camera):
+     @property
+     def is_connected(self) -> bool:
+         """Checks if the camera is currently connected and opened."""
++        # [로컬 패치 2026-08-05] 재연결 중에는 videocapture 가 잠시 None 이다.
++        # 그 몇 초 동안 연결이 끊긴 것으로 보이면 @check_if_connected 가 걸려
++        # 호출자(녹화·평가)가 죽는다 — 복구가 끝날 때까지는 연결된 것으로 본다.
++        if getattr(self, 'recovering', False):
++            return True
+         return isinstance(self.videocapture, cv2.VideoCapture) and self.videocapture.isOpened()
+ 
+     @check_if_already_connected
+@@ -451,16 +457,88 @@ class OpenCVCamera(Camera):
+                     self.latest_timestamp = capture_time
+                 self.new_frame_event.set()
+                 failure_count = 0
++                self.recovering = False
+ 
+             except DeviceNotConnectedError:
+                 break
+             except Exception as e:
++                # 첫 실패부터 '복구 중'으로 잡는다. 재열기는 10회 실패 뒤에 시작하지만,
++                # 그 사이에도 videocapture 가 닫혀 있어 is_connected 가 False 가 되고
++                # 호출자가 DeviceNotConnectedError 로 죽어버린다.
++                self.recovering = True
+                 if failure_count <= 10:
+                     failure_count += 1
+                     logger.warning(f"Error reading frame in background thread for {self}: {e}")
+                 else:
++                    # [로컬 패치 2026-08-05] 원본은 여기서 예외를 던져 읽기 스레드가 죽고,
++                    # 그러면 read_latest 가 "read thread is not running" 으로 터져
++                    # **녹화 실행 전체가 죽는다**(진행 중이던 에피소드가 통째로 날아간다).
++                    # wrist(Innomaker) USB 가 팔 움직임에 빠졌다 붙는 고장이 잦아서,
++                    # 죽는 대신 장치를 다시 열고 스트림을 잇는다.
++                    if self._reopen_device():
++                        failure_count = 0
++                        continue
+                     raise RuntimeError(f"{self} exceeded maximum consecutive read failures.") from e
+ 
++    # [로컬 패치 2026-08-05] USB 가 빠졌다 붙는 카메라를 제자리에서 되살린다.
++    RECOVER_TRIES = 8
++    RECOVER_WAIT_S = 1.0
++    RECOVER_LOG = "/home/user/omx_pill_project/report/camera_recovery.log"
++
++    def _note_recovery(self, msg: str) -> None:
++        """복구 사실을 파일에 남긴다.
++
++        복구하는 동안에는 **마지막 프레임이 반복 기록된다** (팔은 움직이는데 화면은 정지).
++        녹화 데이터로는 오염이므로, 어느 시각에 일어났는지 남겨서 나중에 그 에피소드를
++        골라낼 수 있게 한다. 실기 평가에서는 죽는 것보다 나으니 그냥 이어간다.
++        """
++        import datetime, os
++        try:
++            os.makedirs(os.path.dirname(self.RECOVER_LOG), exist_ok=True)
++            with open(self.RECOVER_LOG, "a") as f:
++                f.write(f"{datetime.datetime.now().isoformat(timespec='seconds')}\t{self}\t{msg}\n")
++        except Exception:
++            pass
++
++    def _reopen_device(self) -> bool:
++        """장치를 닫았다 다시 연다. 성공하면 True.
++
++        죽은 상태에서 첫 VideoCapture 는 대개 실패하는데, **그 실패가 커널의 USB
++        재열거를 부른다** — 그래서 한 번이 아니라 여러 번 두드린다 (STATUS.md 의
++        수동 복구 절차를 그대로 자동화한 것).
++        """
++        # recovering 은 여기서 끄지 않는다 — 읽기가 실제로 성공하는 순간 _read_loop 이 끈다.
++        # 여기서 끄면 재연결 직후 아직 프레임이 안 들어온 찰나에 is_connected 가 False 로
++        # 보여 호출자가 죽는다.
++        self.recovering = True
++        self._note_recovery("복구 시작")
++        for attempt in range(1, self.RECOVER_TRIES + 1):
++            if self.stop_event is not None and self.stop_event.is_set():
++                return False
++            try:
++                if self.videocapture is not None:
++                    self.videocapture.release()
++            except Exception:
++                pass
++            self.videocapture = None
++            time.sleep(self.RECOVER_WAIT_S)
++            try:
++                cap = cv2.VideoCapture(self.index_or_path, self.backend)
++                if cap.isOpened():
++                    self.videocapture = cap
++                    self._configure_capture_settings()
++                    if cap.read()[0]:
++                        logger.warning(f"{self} 카메라 재연결 성공 (시도 {attempt})")
++                        self._note_recovery(f"복구 성공 (시도 {attempt})")
++                        return True
++                cap.release()
++                self.videocapture = None
++            except Exception as e:
++                logger.warning(f"{self} 재연결 시도 {attempt} 실패: {e}")
++        self._note_recovery("복구 실패 — 포기")
++        self.recovering = False
++        return False
++
+     def _start_read_thread(self) -> None:
+         """Starts or restarts the background read thread if it's not running."""
+         self._stop_read_thread()
+@@ -558,9 +636,13 @@ class OpenCVCamera(Camera):
+ 
+         age_ms = (time.perf_counter() - timestamp) * 1e3
+         if age_ms > max_age_ms:
+-            raise TimeoutError(
+-                f"{self} latest frame is too old: {age_ms:.1f} ms (max allowed: {max_age_ms} ms)."
+-            )
++            # [로컬 패치 2026-08-05] 재연결 중에는 프레임이 당연히 낡는다. 여기서 예외를
++            # 던지면 복구가 끝나기 전에 호출자가 죽어버려 재연결이 의미가 없다.
++            # **복구 중일 때만** 낡은 프레임을 그대로 돌려준다 (그 사실은 로그에 남는다).
++            if not getattr(self, "recovering", False):
++                raise TimeoutError(
++                    f"{self} latest frame is too old: {age_ms:.1f} ms (max allowed: {max_age_ms} ms)."
++                )
+ 
+         return frame
+ 
+diff --git a/src/lerobot/policies/act/configuration_act.py b/src/lerobot/policies/act/configuration_act.py
+index bd89185f..e5bafb9c 100644
+--- a/src/lerobot/policies/act/configuration_act.py
++++ b/src/lerobot/policies/act/configuration_act.py
+@@ -112,6 +112,13 @@ class ACTConfig(PreTrainedConfig):
+     n_decoder_layers: int = 1
+     # VAE.
+     use_vae: bool = True
++    # FiLM 목표 조건화 (2026-08-08 추가, 기본 꺼짐 — 기존 체크포인트 호환).
++    # 켜면 목표(observation.environment_state)를 인코더 토큰 1개로 넣는 대신,
++    # 시각 특징맵의 모든 채널을 목표로 변조한다: f' = γ(goal)·f + β(goal).
++    # 왜: 기본 방식에서 목표는 603개 토큰 중 1개(0.17%)라 무시해도 손실이 거의 안 는다.
++    # 실측 결과 원-핫·언어 모두 자기색 대비 1.00배(= 목표 무시)였다.
++    # FiLM 은 목표가 닿는 면적을 512채널×300칸×2대 로 넓힌다. BC-Z/RT-1 이 쓰는 방식.
++    film_conditioning: bool = False
+     latent_dim: int = 32
+     n_vae_encoder_layers: int = 4
+ 
+diff --git a/src/lerobot/policies/act/modeling_act.py b/src/lerobot/policies/act/modeling_act.py
+index a5c48eb3..81b88ecf 100644
+--- a/src/lerobot/policies/act/modeling_act.py
++++ b/src/lerobot/policies/act/modeling_act.py
+@@ -345,6 +345,17 @@ class ACT(nn.Module):
+             self.encoder_env_state_input_proj = nn.Linear(
+                 self.config.env_state_feature.shape[0], config.dim_model
+             )
++        # FiLM: 목표로 시각 특징을 변조한다 (config.film_conditioning). 기본 꺼짐.
++        # γ 는 1 근처, β 는 0 근처에서 출발해야 초기 동작이 기존과 같다 →
++        # 마지막 층을 0 으로 초기화하고 γ 에 +1 을 더해 항등변환에서 시작한다.
++        if getattr(config, "film_conditioning", False) and self.config.env_state_feature:
++            self.film = nn.Sequential(
++                nn.Linear(self.config.env_state_feature.shape[0], config.dim_model),
++                nn.ReLU(),
++                nn.Linear(config.dim_model, 2 * config.dim_model),
++            )
++            nn.init.zeros_(self.film[-1].weight)
++            nn.init.zeros_(self.film[-1].bias)
+         self.encoder_latent_input_proj = nn.Linear(config.latent_dim, config.dim_model)
+         if self.config.image_features:
+             self.encoder_img_feat_input_proj = nn.Conv2d(
+@@ -462,6 +473,9 @@ class ACT(nn.Module):
+         if self.config.robot_state_feature:
+             encoder_in_tokens.append(self.encoder_robot_state_input_proj(batch[OBS_STATE]))
+         # Environment state token.
++        # FiLM 을 켜도 이 토큰은 그대로 둔다 — 위치 임베딩(encoder_1d_feature_pos_embed)이
++        # 토큰 수에 맞춰 고정 크기로 만들어져 있어서, 빼면 602 vs 603 로 어긋난다.
++        # 토큰 경로는 어차피 무시되고 있었으므로(실측 1.00배) 남겨도 해가 없다.
+         if self.config.env_state_feature:
+             encoder_in_tokens.append(self.encoder_env_state_input_proj(batch[OBS_ENV_STATE]))
+ 
+@@ -474,6 +488,16 @@ class ACT(nn.Module):
+                 cam_pos_embed = self.encoder_cam_feat_pos_embed(cam_features).to(dtype=cam_features.dtype)
+                 cam_features = self.encoder_img_feat_input_proj(cam_features)
+ 
++                # FiLM — 목표가 시각 특징의 모든 채널을 변조한다.
++                #   f' = (1 + γ(goal)) · f + β(goal)
++                # γ,β 의 마지막 층이 0 초기화이므로 학습 시작 시점에는 항등변환이다.
++                if getattr(self.config, "film_conditioning", False) and self.config.env_state_feature:
++                    gb = self.film(batch[OBS_ENV_STATE])
++                    gamma, beta = gb.chunk(2, dim=-1)
++                    cam_features = (1.0 + gamma[:, :, None, None]) * cam_features + beta[
++                        :, :, None, None
++                    ]
++
+                 # Rearrange features to (sequence, batch, dim).
+                 cam_features = einops.rearrange(cam_features, "b c h w -> (h w) b c")
+                 cam_pos_embed = einops.rearrange(cam_pos_embed, "b c h w -> (h w) b c")
+diff --git a/src/lerobot/scripts/lerobot_record.py b/src/lerobot/scripts/lerobot_record.py
+index 72708ba2..4806cdb3 100644
+--- a/src/lerobot/scripts/lerobot_record.py
++++ b/src/lerobot/scripts/lerobot_record.py
+@@ -528,6 +528,23 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
+             )
+ 
+         with VideoEncodingManager(dataset):
++            # [OMX 로컬 패치] 첫 에피소드도 → 를 눌러야 시작하도록 대기 단계를 준다.
++            # (원본은 연결되자마자 곧바로 1번 에피소드 녹화가 시작됐다)
++            if not events["stop_recording"]:
++                log_say("Reset the environment", cfg.play_sounds)
++                record_loop(
++                    robot=robot,
++                    events=events,
++                    fps=cfg.dataset.fps,
++                    teleop_action_processor=teleop_action_processor,
++                    robot_action_processor=robot_action_processor,
++                    robot_observation_processor=robot_observation_processor,
++                    teleop=teleop,
++                    control_time_s=cfg.dataset.reset_time_s,
++                    single_task=cfg.dataset.single_task,
++                    display_data=cfg.display_data,
++                )
++
+             recorded_episodes = 0
+             while recorded_episodes < cfg.dataset.num_episodes and not events["stop_recording"]:
+                 log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+@@ -549,11 +566,23 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
+                     display_compressed_images=display_compressed_images,
+                 )
+ 
+-                # Execute a few seconds without recording to give time to manually reset the environment
+-                # Skip reset for the last episode to be recorded
+-                if not events["stop_recording"] and (
+-                    (recorded_episodes < cfg.dataset.num_episodes - 1) or events["rerecord_episode"]
+-                ):
++                # [OMX 로컬 패치] 저장/인코딩을 리셋 '앞'으로 옮겼다. 원본(lerobot_record.py.orig)은
++                # 리셋이 끝난 뒤에 save_episode() 를 불러서, 리셋 끝에 → 를 눌러도 인코딩이 도는
++                # 몇 초 뒤에야 다음 에피소드가 (입력 없이) 시작됐다. 그 사이에 → 를 누르면 다음
++                # 에피소드가 0프레임으로 죽었다.
++                # 바뀐 순서: 에피소드 종료 → 저장·인코딩 → "리셋" 안내음 → → 누르면 즉시 다음 에피소드.
++                if events["rerecord_episode"]:
++                    log_say("Re-record episode", cfg.play_sounds)
++                    events["rerecord_episode"] = False
++                    events["exit_early"] = False
++                    dataset.clear_episode_buffer()
++                else:
++                    dataset.save_episode()
++                    recorded_episodes += 1
++
++                # Execute a few seconds without recording to give time to manually reset the environment.
++                # 다시 찍을 때(←)도 배치를 되돌려야 하므로 리셋을 준다. 마지막 저장 뒤에는 생략.
++                if not events["stop_recording"] and recorded_episodes < cfg.dataset.num_episodes:
+                     log_say("Reset the environment", cfg.play_sounds)
+ 
+                     # reset g1 robot
+@@ -572,16 +601,6 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
+                         single_task=cfg.dataset.single_task,
+                         display_data=cfg.display_data,
+                     )
+-
+-                if events["rerecord_episode"]:
+-                    log_say("Re-record episode", cfg.play_sounds)
+-                    events["rerecord_episode"] = False
+-                    events["exit_early"] = False
+-                    dataset.clear_episode_buffer()
+-                    continue
+-
+-                dataset.save_episode()
+-                recorded_episodes += 1
+     finally:
+         log_say("Stop recording", cfg.play_sounds, blocking=True)
+ 
+diff --git a/src/lerobot/utils/control_utils.py b/src/lerobot/utils/control_utils.py
+index 7c605af1..8dbf8f71 100644
+--- a/src/lerobot/utils/control_utils.py
++++ b/src/lerobot/utils/control_utils.py
+@@ -156,9 +156,20 @@ def init_keyboard_listener():
+                 events["rerecord_episode"] = True
+                 events["exit_early"] = True
+             elif key == keyboard.Key.esc:
+-                print("Escape key pressed. Stopping data recording...")
+-                events["stop_recording"] = True
+-                events["exit_early"] = True
++                # [로컬 패치 2026-08-05] ESC 한 번으로 녹화 전체가 끝나던 것을 **2초 안에
++                # 두 번** 눌러야 끝나게 바꿨다. 이 리스너는 전역이라 다른 창(이미지 뷰어 등)에서
++                # 누른 ESC 까지 받는데, 2026-08-05 초록 수집에서 그것 때문에 녹화가 다섯 번
++                # 통째로 끊겼다. 실수로 한 번 누른 것과 정말 끝내려는 것을 구분한다.
++                import time as _t
++
++                now = _t.monotonic()
++                if now - events.get("_esc_at", -99) < 2.0:
++                    print("Escape key pressed twice. Stopping data recording...")
++                    events["stop_recording"] = True
++                    events["exit_early"] = True
++                else:
++                    events["_esc_at"] = now
++                    print("ESC — 정말 끝내려면 2초 안에 한 번 더 누르세요 (무시하면 계속 녹화)")
+         except Exception as e:
+             print(f"Error handling key press: {e}")
+ 

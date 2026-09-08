@@ -1,0 +1,170 @@
+{
+ "저장시각": "2026-08-07T19:15:17",
+ "정책": {
+  "red": {
+   "run": "act_v3_red29",
+   "task": "pick red pill",
+   "좌표계": "반경(--radial-offset)"
+  },
+  "yellow": {
+   "run": "act_v3_yellow40k",
+   "task": "pick yellow pill",
+   "좌표계": "반경(--radial-offset)"
+  },
+  "green": {
+   "run": "act_v3_green40k",
+   "task": "pick green pill",
+   "좌표계": "책상(플래그 없음)"
+  }
+ },
+ "오프셋": {
+  "act_v3_3color|pick red pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": -0.0,
+   "z_mm": 3.0,
+   "saved": "2026-08-06T12:31:14"
+  },
+  "act_v3_3color|pick green pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": -0.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-06T12:34:45"
+  },
+  "act_v3_red29|pick red pill": {
+   "depth_mm": 9.0,
+   "lateral_mm": 5.0,
+   "z_mm": -1.0,
+   "saved": "2026-08-07T19:15:17",
+   "zones": {},
+   "note": "2026-08-07 18:34 3색 연속 성공 판에서 실제 적용된 값 (fresh.log 기준)"
+  },
+  "act_v3_green|pick green pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": 0.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-06T17:57:12"
+  },
+  "act_v3_yellow|pick yellow pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": 0.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-06T15:09:40"
+  },
+  "act_v3_red36|pick red pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": 0.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-06T18:00:06"
+  },
+  "act_v3_green40k|pick green pill": {
+   "depth_mm": 4.0,
+   "lateral_mm": -2.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-07T18:39:17",
+   "zones": {}
+  },
+  "act_v3_red40k|pick red pill": {
+   "depth_mm": 9.0,
+   "lateral_mm": 5.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-07T16:50:14",
+   "zones": {}
+  },
+  "act_v3_yellow40k|pick yellow pill": {
+   "depth_mm": 0.0,
+   "lateral_mm": 9.0,
+   "z_mm": 0.0,
+   "saved": "2026-08-07T18:36:35",
+   "zones": {}
+  }
+ },
+ "실행형태": {
+  "단일색": "RUN=<run> TASK='pick <색> pill' bash run.sh last --repo-id 1unasy/pill_v3_onehot --start-paused --show --local-keys --relax-on-exit --temporal-ensemble --no-freeze-on-grasp [--radial-offset] --offset-step 1 --trace",
+  "연속시연": "SECS=150 REST=15 WIN=1 bash demo_fresh.sh red yellow green",
+  "메뉴": "ENGINE=chain TIMEOUT=150 bash menu.sh",
+  "필수플래그": [
+   "--no-freeze-on-grasp (없으면 교착)",
+   "--local-keys (한글 ㅂ=q 로 종료됨)",
+   "--temporal-ensemble (계수 0.01)"
+  ]
+ },
+ "카메라": {
+  "top": "/dev/v4l/by-id/usb-Jieli_Technology_USB_Composite_Device-video-index0",
+  "wrist": "/dev/v4l/by-id/usb-Innomaker_Innomaker-U20CAM-720P_SN0001-video-index0",
+  "포맷": "640x480 MJPG 30fps (학습과 동일 — 바꾸면 정책이 깨진다)",
+  "현재상태": "Format Video Capture:\n\tWidth/Height      : 640/480\n\tPixel Format      : 'MJPG' (Motion-JPEG)"
+ },
+ "학습": {
+  "데이터셋": "1unasy/pill_v3 (96개, 115332프레임) / 원-핫판 pill_v3_onehot",
+  "레시피": "lerobot-train --policy.type=act --dataset.image_transforms.enable=true --batch_size=8 --steps=40000 --policy.use_amp=true (맨바닥, 증강 필수)",
+  "에피소드": {
+   "red29": "0~28",
+   "green40k": "29~58",
+   "yellow40k": "59~88",
+   "회복시연": "89~95 (쓰지 않음)"
+  }
+ },
+ "지표": {
+  "red29": "5.45배",
+  "yellow40k": "4.44배",
+  "red40k": "3.85배",
+  "green40k": "3.26배",
+  "설명": "자기 색 대비 다른 색 오차 비율. 클수록 색을 잘 구분한다"
+ },
+ "알려진문제": {
+  "wrist케이블": "오늘 끊김 176회, error -71 192회 — 하드웨어",
+  "정지조건": "목표색이 트레이에 없으면 회복 동작을 반복한다 (red40k). red29 는 멈춘다",
+  "prescribe.py": "GPU 0% / CPU 100% 로 팔이 안 움직인다. 원인 미상. demo_fresh.sh 를 쓴다"
+ },
+ "검증": {
+  "3색 연속 성공": "2026-08-07 18:34 — 세 색 모두 파지, 색마다 카메라 끊김 0회",
+  "영상": "report/demo_red-yellow-green_fresh_0807_1834.mp4 (5.5분)",
+  "적용된 보정": "위치별 자동보정 + 파지점 오프셋 둘 다 켜짐 (fresh.log 로 확인)",
+  "미확인": "세 알약이 전부 약통에 들어갔는지는 영상으로 확정 못 함"
+ },
+ "실험결과_목표조건화": {
+  "색별 정책 3개 (목표 없음)": "3.26~5.45배",
+  "원-핫 토큰 (증강OFF 80K)": "1.00배",
+  "원-핫 토큰 (증강ON 40K)": "1.00배",
+  "원-핫 토큰 (증강ON 128K=9.0에폭)": "1.00배",
+  "원-핫 FiLM (증강ON 128K=9.0에폭)": "1.33배 (96K 부터 정체)",
+  "SmolVLA 언어 (20K=1.4에폭)": "1.02배",
+  "해석": "주입 방식이 0.33 기여, 나머지는 데이터 구조. 같은 장면×3목표 재촬영 필요"
+ },
+ "신규정책_224": {
+  "저장시각": "2026-08-11T20:28:45",
+  "설명": "224 에피소드로 재학습한 색별 정책. 최적 체크포인트는 마지막이 아니라 probe_percolor.py 로 스텝별 측정해 고른 값이다. 실기 검증 전이므로 기존 정책(SETTINGS.json 의 '정책')을 아직 대체하지 않는다.",
+  "실기검증": "미완료",
+  "색별": {
+   "red": {
+    "run": "act_red_224",
+    "ckpt": "090000",
+    "자기색대비": 3.0,
+    "자기색오차": 0.743,
+    "task": "pick red pill",
+    "좌표계": "반경(--radial-offset)"
+   },
+   "green": {
+    "run": "act_green_224",
+    "ckpt": "087502",
+    "자기색대비": 4.77,
+    "자기색오차": 0.64,
+    "task": "pick green pill",
+    "좌표계": "책상(플래그 없음)"
+   },
+   "yellow": {
+    "run": "act_yellow_224",
+    "ckpt": "060000",
+    "자기색대비": 4.61,
+    "자기색오차": 0.646,
+    "task": "pick yellow pill",
+    "좌표계": "반경(--radial-offset)"
+   }
+  },
+  "기존대비": {
+   "red": "2.79→3.00 오차 1.042→0.743",
+   "green": "3.72→4.77 오차 0.926→0.640",
+   "yellow": "3.96→4.61 오차 0.762→0.646"
+  }
+ }
+}

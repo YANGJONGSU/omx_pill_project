@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mingky Care Pro — 약국</title>
+<style>
+:root{
+  /* 한국 약국의 색 — 녹십자 초록과 처방전 종이.
+     알약 초록(#3aa564)보다 훨씬 짙게 잡아 데이터 색과 섞이지 않게 한다. */
+  --bg:#f4f2ec; --card:#ffffff; --line:#e4e1d8; --ink:#16211c; --muted:#6d7a73;
+  --rx:#0e5537; --rx-soft:#e0eee7; --rx-ink:#0a3f29; --rx-line:#c9ddd3;
+  --seal:#a8321f;                       /* 조제 확인 도장 */
+  --ok:#0e7a4a; --ok-soft:#dff0e6; --warn:#8a5a12; --warn-soft:#f7edd8;
+  --bad:#a8321f; --bad-soft:#f7e3df;
+  --red:#d8443f; --yellow:#d9a52c; --green:#3aa564;
+  --r:12px; --shadow:0 1px 2px rgba(22,33,28,.05), 0 2px 12px rgba(22,33,28,.04);
+  --serif:"Noto Serif CJK KR","Noto Serif KR",serif;
+  --sans:"Noto Sans CJK KR","Noto Sans KR",-apple-system,"Segoe UI",sans-serif;
+  --mono:"Noto Sans Mono CJK KR",ui-monospace,"Menlo",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 var(--sans)}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+b,strong{font-weight:700}
+
+/* ── 약국 간판 ─────────────────────────────────────────── */
+header{background:var(--rx);color:#fff;padding:0 28px;
+       display:flex;align-items:center;gap:18px;position:sticky;top:0;z-index:10;
+       min-height:62px;box-shadow:0 1px 0 rgba(0,0,0,.10)}
+.brand{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:-.2px;
+       display:flex;align-items:center;gap:11px}
+.brand span{opacity:.72;font-weight:400}
+/* 녹십자 — 약국 표시 */
+.cross{width:26px;height:26px;flex-shrink:0;border-radius:5px;background:#fff;
+       position:relative}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--rx);
+       left:50%;top:50%;transform:translate(-50%,-50%)}
+.cross::before{width:4px;height:15px} .cross::after{width:15px;height:4px}
+.tabs{margin-left:auto;display:flex;gap:4px}
+.tab{padding:7px 15px;border-radius:8px;border:0;background:transparent;
+     color:rgba(255,255,255,.72);font-weight:600}
+.tab.on{background:rgba(255,255,255,.16);color:#fff}
+.tab:hover{color:#fff}
+.mode{margin-left:6px;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:999px;
+      letter-spacing:.3px}
+.mode.sim{background:rgba(255,255,255,.18);color:#fff}
+.mode.real{background:#fff;color:var(--rx-ink)}
+
+main{max-width:1240px;margin:0 auto;padding:26px 24px 90px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+
+/* ── 카드 = 처방전 용지 ────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+      padding:22px 24px;box-shadow:var(--shadow);position:relative}
+/* 용지 상단의 인쇄선 */
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
+      border-radius:var(--r) var(--r) 0 0;
+      background:linear-gradient(90deg,var(--rx) 0 36%,var(--rx-line) 36% 100%)}
+.card h2{margin:0 0 17px;font-size:12px;font-weight:700;color:var(--rx-ink);
+      letter-spacing:1.4px;text-transform:uppercase;
+      display:flex;align-items:center;gap:9px}
+.card h2::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* 정의형 목록 */
+dl{margin:0;display:grid;grid-template-columns:92px 1fr;row-gap:11px;align-items:center}
+dt{color:var(--muted);font-size:14px}
+dd{margin:0;font-weight:600}
+dd#v-id,dd#v-birth{font-family:var(--mono);font-size:14px;letter-spacing:-.2px}
+.name{font-family:var(--serif);font-size:28px;font-weight:700;letter-spacing:-.5px;margin:0 0 14px}
+
+/* 입력 */
+.f{display:grid;grid-template-columns:92px 1fr;row-gap:11px;align-items:center}
+.f label{color:var(--muted);font-size:14px}
+.f input,.f select{width:100%;padding:9px 12px;border:1px solid var(--line);
+  border-radius:8px;background:#fbfbf8;color:var(--ink)}
+.f input:focus,.f select:focus{outline:2px solid var(--rx-soft);border-color:var(--rx)}
+
+/* ── 환자 검색 ─────────────────────────────────────────── */
+.search{position:relative}
+.search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line);
+  border-radius:9px;background:#fbfbf8 url("data:image/svg+xml;charset=utf-8,\
+%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' \
+stroke='%236d7a73' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E\
+%3Cpath d='M11 11l4 4'/%3E%3C/svg%3E") no-repeat 14px center}
+.search input:focus{outline:2px solid var(--rx-soft);border-color:var(--rx)}
+.hint{color:var(--muted);font-size:13px;margin:13px 2px 0}
+.hits{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#fff;
+  border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(22,33,28,.13);
+  max-height:280px;overflow-y:auto;z-index:20}
+.hit{display:flex;align-items:center;gap:12px;padding:12px 15px;cursor:pointer;
+  border-bottom:1px solid var(--line)}
+.hit:last-child{border-bottom:0}
+.hit:hover{background:var(--rx-soft)}
+.hit b{font-size:15px}
+.hit .m{color:var(--muted);font-size:12.5px;font-family:var(--mono)}
+.hit .dxc{margin-left:auto;font-size:12px;font-weight:700;padding:3px 10px;
+  border-radius:999px;background:var(--rx-soft);color:var(--rx-ink);white-space:nowrap}
+.ptop{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ptop .name{margin:0;flex:1;min-width:0}
+.btn.sm{padding:6px 13px;font-size:13px;font-weight:600;border-radius:7px}
+#pt-info dl{margin-top:15px}
+.dx{display:flex;align-items:center;gap:10px;margin:0 0 4px;flex-wrap:wrap}
+.dx .tag{font-size:13.5px;font-weight:700;padding:5px 13px;border-radius:6px;
+  background:var(--rx-soft);color:var(--rx-ink);border:1px solid var(--rx-line)}
+
+@keyframes flash{0%{background:var(--rx-soft)}100%{background:transparent}}
+.flash{animation:flash .8s ease-out}
+
+/* ── 처방 ──────────────────────────────────────────────── */
+.rx{display:grid;gap:10px}
+.rxit{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);
+      border-radius:10px;background:#fbfbf8;text-align:left;width:100%;
+      transition:border-color .12s,background .12s}
+.rxit:hover{border-color:var(--rx-line);background:#fff}
+.rxit.on{border-color:var(--rx);background:var(--rx-soft);box-shadow:inset 3px 0 0 var(--rx)}
+.rxit b{font-size:15.5px}
+.rxit small{display:block;color:var(--muted);font-weight:400;margin-top:3px;
+      font-family:var(--mono);font-size:12.5px;letter-spacing:-.2px}
+.pills{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+.pill{width:20px;height:20px;border-radius:999px;border:2px solid #fff;
+      box-shadow:0 0 0 1px rgba(22,33,28,.16)}
+.pill.red{background:var(--red)} .pill.yellow{background:var(--yellow)} .pill.green{background:var(--green)}
+
+/* ── 정책 ──────────────────────────────────────────────── */
+.pol{display:grid;gap:9px}
+.polit{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--line);
+       border-radius:10px;background:#fbfbf8;text-align:left;width:100%}
+.polit:hover{border-color:var(--rx-line);background:#fff}
+.polit.on{border-color:var(--rx);background:var(--rx-soft);box-shadow:inset 3px 0 0 var(--rx)}
+.polit .t{font-weight:700}
+.polit .s{color:var(--muted);font-size:13px;margin-top:2px}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;white-space:nowrap;margin-left:auto}
+.badge.rec{background:var(--ok-soft);color:var(--ok)}
+.badge.exp{background:#eeece5;color:#6d7a73}
+.polnote{margin-top:13px;padding:13px 15px;background:#faf9f5;border-radius:9px;
+         border-left:3px solid var(--rx);color:#42504a;font-size:13.5px;line-height:1.65}
+
+/* ── 트레이 ────────────────────────────────────────────── */
+.tray{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tc{padding:16px;border:1px solid var(--line);border-radius:10px;text-align:center;background:#fbfbf8}
+.tc .dot{width:27px;height:27px;border-radius:999px;margin:0 auto 10px;
+         box-shadow:0 0 0 1px rgba(22,33,28,.16)}
+.tc .n{font-size:27px;font-weight:700;line-height:1;font-family:var(--mono);
+       font-variant-numeric:tabular-nums}
+.tc .l{color:var(--muted);font-size:12.5px;margin-top:6px}
+.tc.zero{opacity:.4}
+.tc.zero .n{color:var(--bad)}
+
+/* ── 진행 단계 ─────────────────────────────────────────── */
+.steps{display:flex;align-items:flex-start;padding:8px 4px}
+.st{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;min-width:0}
+.st .bar{position:absolute;top:20px;left:50%;width:100%;height:2px;background:var(--line);z-index:0}
+.st:last-child .bar{display:none}
+.st .bar.done{background:var(--rx)}
+.st .c{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;
+       font-weight:700;background:#fff;border:2px solid var(--line);color:var(--muted);z-index:1;
+       font-family:var(--mono)}
+.st.done .c{background:var(--rx);border-color:var(--rx);color:#fff}
+.st.now .c{border-color:var(--rx);color:var(--rx-ink);background:var(--rx-soft);
+           animation:pulse 1.5s ease-in-out infinite}
+.st.fail .c{background:var(--bad);border-color:var(--bad);color:#fff}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(14,85,55,.32)}50%{box-shadow:0 0 0 9px rgba(14,85,55,0)}}
+.st .lb{margin-top:10px;font-size:13.5px;font-weight:600;color:var(--muted);text-align:center}
+.st.now .lb,.st.done .lb{color:var(--ink)}
+.st.now .lb{color:var(--rx-ink)}
+
+/* ── 알림 ──────────────────────────────────────────────── */
+.logs{display:grid;gap:8px;max-height:290px;overflow-y:auto}
+.log{display:flex;gap:14px;padding:11px 15px;border-radius:8px;background:#faf9f5;
+     border-left:3px solid var(--rx-line);font-size:14px}
+.log.ok{background:var(--ok-soft);border-color:var(--ok)}
+.log.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.log.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.log .t{color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums;flex-shrink:0}
+.empty{color:var(--muted);text-align:center;padding:26px;font-size:14px}
+
+/* ── 버튼 ──────────────────────────────────────────────── */
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{padding:11px 21px;border-radius:9px;border:1px solid var(--line);background:#fff;
+     font-weight:700;color:var(--ink)}
+.btn:hover{border-color:var(--rx-line);background:#fbfbf8}
+.btn.pri{background:var(--rx);border-color:var(--rx);color:#fff}
+.btn.pri:hover{background:var(--rx-ink)}
+.btn.ok{background:var(--seal);border-color:var(--seal);color:#fff}
+.btn.ok:hover{filter:brightness(.92)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn:disabled:hover{border-color:var(--line);background:#fff}
+.state{margin-left:auto;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;
+       background:#eeece5;color:#6d7a73}
+.state.run{background:var(--rx-soft);color:var(--rx-ink)}
+.state.done{background:var(--ok-soft);color:var(--ok)}
+.state.bad{background:var(--bad-soft);color:var(--bad)}
+.state .d{display:inline-block;width:7px;height:7px;border-radius:999px;background:currentColor;
+          margin-right:7px;vertical-align:1px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="cross"></span>Mingky Care Pro<span> · 약국</span></div>
+  <div class="tabs">
+    <button class="tab on">약사</button>
+    <button class="tab" onclick="alert('엔지니어 화면은 다른 팀원 담당입니다.')">엔지니어</button>
+  </div>
+  <span id="mode" class="mode sim">시뮬레이션</span>
+</header>
+
+<main>
+  <div class="grid g2">
+    <!-- 환자 -->
+    <section class="card">
+      <h2>환자 정보</h2>
+
+      <!-- ① 검색 상태 — 환자를 고르기 전 -->
+      <div id="pt-search" class="search">
+        <input id="q" placeholder="이름 또는 생년월일로 검색  (예: 김수진, 1978-03-14)"
+               oninput="findPt()" onfocus="findPt()" autocomplete="off">
+        <div class="hits" id="hits" hidden></div>
+        <p class="hint">환자를 검색해 선택하면 병명과 처방이 자동으로 채워집니다.</p>
+      </div>
+
+      <!-- ② 선택 상태 — 검색 자리를 환자 정보가 대신한다 -->
+      <div id="pt-info" hidden>
+        <div class="ptop">
+          <div class="name" id="pname">—</div>
+          <button class="btn sm" onclick="clearPt()">다른 환자</button>
+        </div>
+        <div id="dx" class="dx"></div>
+        <dl>
+          <dt>환자 ID</dt><dd id="v-id">—</dd>
+          <dt>생년월일</dt><dd id="v-birth">—</dd>
+          <dt>성별</dt><dd id="v-sex">—</dd>
+          <dt>담당의</dt><dd id="v-doc">—</dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 트레이 -->
+    <section class="card">
+      <h2>트레이 알약</h2>
+      <div class="tray" id="tray"></div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn" onclick="scanTray()">다시 확인</button>
+        <span id="trayinfo" style="color:var(--muted);font-size:13px"></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- 처방 -->
+  <section class="card" style="margin-top:18px">
+    <h2>처방 선택</h2>
+    <div class="rx" id="rx"></div>
+    <div class="actions" style="margin-top:14px">
+      <button class="btn" id="btn-rand" onclick="randRx()">🎲 무작위로 다시 뽑기</button>
+      <span style="color:var(--muted);font-size:13px">
+        병명은 그대로 두고 <b>모든 처방의 색 조합과 순서</b>를 새로 뽑습니다</span>
+    </div>
+  </section>
+
+  <!-- 정책 -->
+  <section class="card" style="margin-top:18px">
+    <h2>조제 방식</h2>
+    <div class="pol" id="pol"></div>
+    <div class="polnote" id="polnote"></div>
+  </section>
+
+  <!-- 진행 -->
+  <section class="card" style="margin-top:18px">
+    <h2>진행 상황</h2>
+    <div class="steps" id="steps"><div class="empty">처방을 선택하면 단계가 표시됩니다</div></div>
+    <div class="actions" style="margin-top:18px">
+      <button class="btn pri" id="btn-go" onclick="start()">조제 시작</button>
+      <button class="btn" id="btn-stop" onclick="stop()" disabled>중단</button>
+      <button class="btn ok" id="btn-pack" onclick="pack()" disabled>포장하기</button>
+      <button class="btn" id="btn-reset" onclick="reset()">처음부터</button>
+      <span class="state" id="state"><span class="d"></span>대기</span>
+    </div>
+  </section>
+
+  <!-- 알림 -->
+  <section class="card" style="margin-top:18px">
+    <h2>알림</h2>
+    <div class="logs" id="logs"><div class="empty">아직 기록이 없습니다</div></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const KOR = {red:"빨강", yellow:"노랑", green:"초록"};
+let RX = null, POL = null, rxSel = null, polSel = null, running = false;
+
+/* ── 초기화 ─────────────────────────────────────────── */
+async function init(){
+  const r = await (await fetch("/api/처방목록")).json();
+  RX = r; drawRx();
+  const p = await (await fetch("/api/정책목록")).json();
+  POL = p.정책; polSel = p.기본; drawPol();
+  scanTray();
+  listen();
+}
+
+/* ── 처방 ───────────────────────────────────────────── */
+let RANDOM = false;                   // 무작위로 뽑은 조합을 쓰고 있는가
+function rxList(){ return RX.처방; }
+function rxOf(code){ return RX.처방.find(p => p.코드 === code); }
+function drawRx(){
+  $("#rx").innerHTML = rxList().map(p => `
+    <button class="rxit ${rxSel===p.코드?'on':''}" onclick="pickRx('${p.코드}')">
+      <div>
+        <b>${p.병명}</b>
+        <small>${p.코드} · ${RANDOM ? p.조합.map(c=>KOR[c]).join(' → ') : p.설명}</small>
+      </div>
+      <div class="pills">${p.조합.map(c=>`<span class="pill ${c}" title="${KOR[c]}"></span>`).join("")}</div>
+    </button>`).join("");
+}
+function pickRx(code){ rxSel = code; drawRx(); drawSteps(); }
+
+/* ── 정책 ───────────────────────────────────────────── */
+function drawPol(){
+  $("#pol").innerHTML = POL.map(p => `
+    <button class="polit ${polSel===p.id?'on':''}" onclick="pickPol('${p.id}')">
+      <div style="flex:1;min-width:0">
+        <div class="t">${p.이름}</div>
+        <div class="s">${p.부제}</div>
+      </div>
+      <span class="badge ${p.추천?'rec':'exp'}">${p.추천?'검증됨':'실험'}</span>
+    </button>`).join("");
+  const s = POL.find(p=>p.id===polSel);
+  $("#polnote").innerHTML = s ? `<b>${s.이름}</b> — ${s.설명}<br><span style="color:#64748b">실기: ${s.실기}</span>` : "";
+}
+function pickPol(id){ polSel = id; drawPol(); }
+
+/* ── 트레이 ─────────────────────────────────────────── */
+async function scanTray(){
+  $("#trayinfo").textContent = "확인 중…";
+  try{
+    const t = await (await fetch("/api/트레이")).json();
+    const n = t.개수 || {};
+    $("#tray").innerHTML = ["red","yellow","green"].map(c=>{
+      const v = n[c] ?? 0;
+      const 약 = RX ? RX.약품[c] : {이름:""};
+      return `<div class="tc ${v===0?'zero':''}">
+        <div class="dot" style="background:var(--${c})"></div>
+        <div class="n">${v}</div>
+        <div class="l">${KOR[c]} · ${약.이름||""}</div></div>`;
+    }).join("");
+    $("#trayinfo").textContent = t.오류 ? "⚠ " + t.오류 : `${t.모드} 모드로 읽었습니다`;
+    $("#mode").className = "mode " + (t.모드==="실제" ? "real":"sim");
+    $("#mode").textContent = t.모드==="실제" ? "실제 로봇" : "시뮬레이션";
+  }catch(e){ $("#trayinfo").textContent = "확인 실패: " + e; }
+}
+
+/* ── 진행 단계 ──────────────────────────────────────── */
+let stepState = [];
+function drawSteps(){
+  const p = rxOf(rxSel);
+  if(!p){ $("#steps").innerHTML = `<div class="empty">처방을 선택하면 단계가 표시됩니다</div>`; return; }
+  const items = p.조합.map((c,i)=>({label:`${KOR[c]} · ${RX.약품[c].이름}`, state:stepState[i]||""}));
+  items.push({label:"포장", state:stepState[p.조합.length]||""});
+  $("#steps").innerHTML = items.map((it,i)=>`
+    <div class="st ${it.state}">
+      <div class="bar ${it.state==='done'?'done':''}"></div>
+      <div class="c">${it.state==='done'?'✓':(it.state==='fail'?'!':i+1)}</div>
+      <div class="lb">${it.label}</div>
+    </div>`).join("");
+}
+
+/* ── 로그 ───────────────────────────────────────────── */
+function log(msg, kind=""){
+  const box = $("#logs");
+  if(box.querySelector(".empty")) box.innerHTML = "";
+  const t = new Date().toLocaleTimeString("ko-KR",{hour12:false});
+  box.insertAdjacentHTML("afterbegin",
+    `<div class="log ${kind}"><span class="t">${t}</span><span>${msg}</span></div>`);
+}
+function setState(txt, cls=""){ $("#state").className = "state " + cls;
+  $("#state").innerHTML = `<span class="d"></span>${txt}`; }
+
+/* ── 실행 ───────────────────────────────────────────── */
+let PT = null;                        // 선택된 환자 (없으면 조제 못 한다)
+
+// ── 환자 검색 ────────────────────────────────────────────────
+let PTS = null;
+async function findPt(){
+  const q = $("#q").value.trim();
+  const box = $("#hits");
+  const r = await fetch("/api/환자검색?q=" + encodeURIComponent(q));
+  const d = await r.json();
+  PTS = d.환자;
+  if(!PTS.length){ box.hidden = true; return; }
+  box.innerHTML = PTS.map((p,i) => `
+    <div class="hit" onclick="pickPt(${i})">
+      <div><b>${p.이름}</b> <span class="m">${p.id} · ${p.성별} · ${p.생년}</span></div>
+      <span class="dxc">${p.병명}</span>
+    </div>`).join("");
+  box.hidden = false;
+}
+function pickPt(i){
+  PT = PTS[i];
+  $("#q").value = ""; $("#hits").hidden = true;
+  $("#pt-search").hidden = true;
+  $("#pt-info").hidden = false;
+  $("#pname").textContent = PT.이름;
+  $("#v-id").textContent    = PT.id;
+  $("#v-birth").textContent = PT.생년;
+  $("#v-sex").textContent   = PT.성별;
+  $("#v-doc").textContent   = PT.담당의;
+  $("#dx").innerHTML = `<span class="tag">${PT.병명}</span>`;
+  if(PT.처방){ pickRx(PT.처방.코드);
+               log(`${PT.이름} 님 — ${PT.병명}, 처방 ${PT.처방.코드} 를 선택했습니다`); }
+}
+function clearPt(){
+  PT = null;
+  $("#pt-info").hidden = true;
+  $("#pt-search").hidden = false;
+  $("#q").value = ""; $("#q").focus();
+}
+
+document.addEventListener("click", e => {
+  if(!e.target.closest(".search")) $("#hits").hidden = true;
+});
+
+// ── 무작위 처방 ────────────────────────────────────────────
+// 병명은 그대로 두고 **모든 처방의 색 조합을 새로 뽑는다.**
+// 시연에서 "순서를 미리 정해 두지 않았다" 를 보이는 용도다.
+async function randRx(){
+  const b = $("#btn-rand");
+  b.disabled = true; b.textContent = "뽑는 중…";
+  try{
+    const d = await (await fetch("/api/랜덤처방")).json();
+    if(d.오류){ log(d.오류, "bad"); return; }
+    RX.처방 = d.처방;
+    RANDOM = true;
+    drawRx(); drawSteps();
+    log("모든 처방의 색 조합을 새로 뽑았습니다 — 같은 병명도 순서가 달라집니다");
+    $("#rx").classList.remove("flash"); void $("#rx").offsetWidth;
+    $("#rx").classList.add("flash");
+  } finally { b.disabled = false; b.textContent = "🎲 무작위로 다시 뽑기"; }
+}
+
+// ── 처음부터 ────────────────────────────────────────────────
+// 시연을 이어서 하려면 상태를 비워야 한다. 환자·처방 선택과 진행 표시를
+// 모두 되돌리고 트레이를 다시 센다.
+async function reset(){
+  const r = await fetch("/api/리셋", {method:"POST"});
+  const d = await r.json();
+  if(d.오류){ log(d.오류, "bad"); return; }
+  clearPt();
+  rxSel = null; stepState = [];
+  $("#logs").innerHTML = '<div class="empty">아직 알림이 없습니다</div>';
+  $("#btn-go").disabled = false;
+  $("#btn-stop").disabled = true;
+  $("#btn-pack").disabled = true;
+  setState("대기", "");
+  drawRx(); drawSteps();
+  scanTray();
+  log("초기화했습니다 — 환자를 검색해 다시 시작하세요");
+}
+
+async function start(){
+  if(!rxSel) return alert("처방을 선택하세요");
+  if(!PT) return alert("환자를 먼저 검색해 선택하세요");
+  stepState = []; drawSteps();
+  const body = {
+    환자:{이름:PT.이름, id:PT.id, 생년:PT.생년, 성별:PT.성별, 병명:PT.병명},
+    처방코드: rxSel, 정책: polSel };
+  // 화면에 보이는 조합을 **언제나** 함께 보낸다. 무작위든 아니든 화면이 진실이다.
+  const _r = rxOf(rxSel); if(_r) body.조합 = _r.조합;
+  const r = await fetch("/api/조제",{method:"POST",headers:{"Content-Type":"application/json"},
+                                     body:JSON.stringify(body)});
+  const d = await r.json();
+  if(!r.ok){ log("⚠ " + d.오류, "bad"); return; }
+  running = true; $("#btn-go").disabled = true; $("#btn-stop").disabled = false;
+  $("#btn-pack").disabled = true;
+  setState("조제 중","run");
+  log(`조제 시작 — ${d.처방.병명} (${d.정책})`);
+}
+
+async function stop(){
+  await fetch("/api/중단",{method:"POST"});
+  log("중단을 요청했습니다","warn");
+}
+
+async function pack(){
+  const r = await fetch("/api/포장",{method:"POST"});
+  const d = await r.json();
+  if(!r.ok){ log("⚠ " + d.오류, "bad"); return; }
+  $("#btn-pack").disabled = true;
+}
+
+/* ── 진행 수신 (SSE) ────────────────────────────────── */
+function listen(){
+  const es = new EventSource("/api/진행");
+  es.onmessage = ev => {
+    const e = JSON.parse(ev.data);
+    const p = rxOf(rxSel);
+    switch(e.종류){
+      case "단계시작":
+        stepState[e.순번-1] = "now"; drawSteps();
+        log(`${e.순번}번째 — ${e.색이름} ${e.약} 집는 중`); break;
+      case "알림":
+        log(e.글, e.급 || ""); break;
+      case "단계끝":
+        stepState[e.순번-1] = e.성공 ? "done" : "fail"; drawSteps();
+        log(e.성공 ? `${e.순번}번째 완료 — ${e.메모}` : `${e.순번}번째 실패 — ${e.메모}`,
+            e.성공 ? "ok" : "bad"); break;
+      case "조제완료":
+        running = false; $("#btn-go").disabled = false; $("#btn-stop").disabled = true;
+        $("#btn-pack").disabled = false;
+        setState("조제 완료 · 포장 대기","done");
+        log("조제가 끝났습니다. 포장하기를 누르세요.","ok"); scanTray(); break;
+      case "포장시작":
+        if(p) stepState[p.조합.length] = "now"; drawSteps();
+        setState("포장 중","run"); log("포장을 시작합니다"); break;
+      case "포장단계": log(`포장 — ${e.이름}`); break;
+      case "완료":
+        if(p) stepState[p.조합.length] = "done"; drawSteps();
+        setState("완료","done"); log(`모든 작업 완료 (${e.시각})`,"ok"); break;
+      case "중단":
+        running = false; $("#btn-go").disabled = false; $("#btn-stop").disabled = true;
+        setState("중단됨","bad"); log("중단: " + e.이유,"bad"); break;
+    }
+  };
+  es.onerror = () => log("서버 연결이 끊겼습니다","warn");
+}
+
+init();
+</script>
+</body>
+</html>

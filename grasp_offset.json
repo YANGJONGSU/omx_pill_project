@@ -1,0 +1,357 @@
+{
+ "act_v3_3color|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 3.0,
+  "saved": "2026-08-16T16:40:14",
+  "zones": {}
+ },
+ "act_v3_3color|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-14T17:12:11",
+  "zones": {}
+ },
+ "act_v3_red29|pick red pill": {
+  "depth_mm": 9.0,
+  "lateral_mm": 5.0,
+  "z_mm": -1.0,
+  "saved": "2026-08-07T19:15:17",
+  "zones": {},
+  "note": "2026-08-07 18:34 3색 연속 성공 판에서 실제 적용된 값 (fresh.log 기준)"
+ },
+ "act_v3_green|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-06T17:57:12"
+ },
+ "act_v3_yellow|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-06T15:09:40"
+ },
+ "act_v3_red36|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-06T18:00:06"
+ },
+ "act_v3_green40k|pick green pill": {
+  "depth_mm": 4.0,
+  "lateral_mm": -2.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-07T18:39:17",
+  "zones": {}
+ },
+ "act_v3_red40k|pick red pill": {
+  "depth_mm": 9.0,
+  "lateral_mm": 5.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-07T16:50:14",
+  "zones": {}
+ },
+ "act_v3_yellow40k|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 9.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-07T18:36:35",
+  "zones": {}
+ },
+ "smolvla_v1|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-08T00:16:34",
+  "zones": {}
+ },
+ "act_v3_onehot_aug|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-08T14:09:43",
+  "zones": {}
+ },
+ "act_v3_onehot_aug|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-08T14:11:01",
+  "zones": {}
+ },
+ "act_v3_onehot_aug|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-08T14:12:23",
+  "zones": {}
+ },
+ "act_green_224|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-17T23:47:53",
+  "zones": {}
+ },
+ "act_red_224|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T20:28:08",
+  "zones": {}
+ },
+ "act_yellow_224|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T20:29:48",
+  "zones": {}
+ },
+ "act_film_224|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-18T02:01:35",
+  "zones": {}
+ },
+ "act_film_224|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-20T15:53:03",
+  "zones": {}
+ },
+ "act_film_224|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-18T00:03:59",
+  "zones": {}
+ },
+ "act_novae_224|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:10:00",
+  "zones": {}
+ },
+ "diffusion_224|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T15:10:29",
+  "zones": {}
+ },
+ "diffusion_224|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-14T23:01:42",
+  "zones": {}
+ },
+ "act_novae_224|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:03:32",
+  "zones": {}
+ },
+ "act_xy_224|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 2.0,
+  "saved": "2026-08-25T13:56:25",
+  "zones": {}
+ },
+ "act_xy_224|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-24T17:10:32",
+  "zones": {}
+ },
+ "act_marker2|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-17T17:54:56",
+  "zones": {}
+ },
+ "act_marker2|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-14T23:21:35",
+  "zones": {}
+ },
+ "act_xy_224|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-24T15:27:30",
+  "zones": {}
+ },
+ "act_v3_3color|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-14T23:45:52",
+  "zones": {}
+ },
+ "smolvla_v2|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T15:22:26",
+  "zones": {}
+ },
+ "smolvla_v2|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-24T17:08:33",
+  "zones": {}
+ },
+ "smolvla_v2|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T15:14:46",
+  "zones": {}
+ },
+ "act_novae_224|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:01:53",
+  "zones": {}
+ },
+ "act_v3_film|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:15:30",
+  "zones": {}
+ },
+ "act_v3_film|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:19:54",
+  "zones": {}
+ },
+ "act_v3_onehot_aug|pick -red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-16T16:38:25",
+  "zones": {}
+ },
+ "smolvla_v3|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-18T23:57:01",
+  "zones": {}
+ },
+ "smolvla_v3|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T00:00:39",
+  "zones": {}
+ },
+ "smolvla_v3|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T00:39:09",
+  "zones": {}
+ },
+ "smolvla_v4|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T15:30:55",
+  "zones": {}
+ },
+ "smolvla_v4|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T15:27:33",
+  "zones": {}
+ },
+ "smolvla_v4|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T15:29:03",
+  "zones": {}
+ },
+ "smolvla_v5|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-19T15:37:45",
+  "zones": {}
+ },
+ "smolvla_v8|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-20T19:45:52",
+  "zones": {}
+ },
+ "smolvla_v6|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-20T15:34:20",
+  "zones": {}
+ },
+ "smolvla_v7|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-20T15:35:22",
+  "zones": {}
+ },
+ "smolvla_v10|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-22T23:39:02",
+  "zones": {}
+ },
+ "smolvla_v10|pick red pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-22T23:45:46",
+  "zones": {}
+ },
+ "smolvla_v10|pick green pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-22T23:31:46",
+  "zones": {}
+ },
+ "smolvla_v9|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-21T15:27:46",
+  "zones": {}
+ },
+ "smolvla_v12|pick yellow pill": {
+  "depth_mm": 0.0,
+  "lateral_mm": 0.0,
+  "z_mm": 0.0,
+  "saved": "2026-08-21T21:33:38",
+  "zones": {}
+ }
+}

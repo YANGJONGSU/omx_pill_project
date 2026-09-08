@@ -1,0 +1,898 @@
+[
+ {
+  "ep": 100,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.543,
+  "u_cmd": 0.595,
+  "hit": true
+ },
+ {
+  "ep": 100,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.512,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 100,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.546,
+  "u_cmd": 0.595,
+  "hit": true
+ },
+ {
+  "ep": 100,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.529,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 100,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.531,
+  "u_cmd": 0.595,
+  "hit": true
+ },
+ {
+  "ep": 100,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.48,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 100,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.547,
+  "u_cmd": 0.595,
+  "hit": true
+ },
+ {
+  "ep": 100,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.468,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 101,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.384,
+  "u_cmd": 0.39,
+  "hit": true
+ },
+ {
+  "ep": 101,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.413,
+  "u_cmd": 0.601,
+  "hit": false
+ },
+ {
+  "ep": 101,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.384,
+  "u_cmd": 0.39,
+  "hit": true
+ },
+ {
+  "ep": 101,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.414,
+  "u_cmd": 0.601,
+  "hit": false
+ },
+ {
+  "ep": 101,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.376,
+  "u_cmd": 0.39,
+  "hit": true
+ },
+ {
+  "ep": 101,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.416,
+  "u_cmd": 0.601,
+  "hit": false
+ },
+ {
+  "ep": 101,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.376,
+  "u_cmd": 0.39,
+  "hit": true
+ },
+ {
+  "ep": 101,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.428,
+  "u_cmd": 0.601,
+  "hit": false
+ },
+ {
+  "ep": 102,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.347,
+  "u_cmd": 0.182,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.398,
+  "u_cmd": 0.602,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.357,
+  "u_cmd": 0.182,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.412,
+  "u_cmd": 0.602,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.337,
+  "u_cmd": 0.182,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.42,
+  "u_cmd": 0.602,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.319,
+  "u_cmd": 0.182,
+  "hit": true
+ },
+ {
+  "ep": 102,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.42,
+  "u_cmd": 0.602,
+  "hit": true
+ },
+ {
+  "ep": 124,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.569,
+  "u_cmd": 0.584,
+  "hit": true
+ },
+ {
+  "ep": 124,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.552,
+  "u_cmd": 0.2,
+  "hit": false
+ },
+ {
+  "ep": 124,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.576,
+  "u_cmd": 0.584,
+  "hit": true
+ },
+ {
+  "ep": 124,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.546,
+  "u_cmd": 0.2,
+  "hit": false
+ },
+ {
+  "ep": 124,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.577,
+  "u_cmd": 0.584,
+  "hit": true
+ },
+ {
+  "ep": 124,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.55,
+  "u_cmd": 0.2,
+  "hit": false
+ },
+ {
+  "ep": 124,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.574,
+  "u_cmd": 0.584,
+  "hit": true
+ },
+ {
+  "ep": 124,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.554,
+  "u_cmd": 0.2,
+  "hit": false
+ },
+ {
+  "ep": 125,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.118,
+  "u_cmd": 0.2,
+  "hit": true
+ },
+ {
+  "ep": 125,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.247,
+  "u_cmd": 0.582,
+  "hit": false
+ },
+ {
+  "ep": 125,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.124,
+  "u_cmd": 0.2,
+  "hit": true
+ },
+ {
+  "ep": 125,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.254,
+  "u_cmd": 0.582,
+  "hit": false
+ },
+ {
+  "ep": 125,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.121,
+  "u_cmd": 0.2,
+  "hit": true
+ },
+ {
+  "ep": 125,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.237,
+  "u_cmd": 0.582,
+  "hit": false
+ },
+ {
+  "ep": 125,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.131,
+  "u_cmd": 0.2,
+  "hit": true
+ },
+ {
+  "ep": 125,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.237,
+  "u_cmd": 0.582,
+  "hit": false
+ },
+ {
+  "ep": 126,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.372,
+  "u_cmd": 0.387,
+  "hit": true
+ },
+ {
+  "ep": 126,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.344,
+  "u_cmd": 0.192,
+  "hit": false
+ },
+ {
+  "ep": 126,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.371,
+  "u_cmd": 0.387,
+  "hit": true
+ },
+ {
+  "ep": 126,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.344,
+  "u_cmd": 0.192,
+  "hit": false
+ },
+ {
+  "ep": 126,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.362,
+  "u_cmd": 0.387,
+  "hit": true
+ },
+ {
+  "ep": 126,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.345,
+  "u_cmd": 0.192,
+  "hit": false
+ },
+ {
+  "ep": 126,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.345,
+  "u_cmd": 0.387,
+  "hit": true
+ },
+ {
+  "ep": 126,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.292,
+  "u_cmd": 0.192,
+  "hit": false
+ },
+ {
+  "ep": 144,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.389,
+  "u_cmd": 0.415,
+  "hit": true
+ },
+ {
+  "ep": 144,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.366,
+  "u_cmd": 0.173,
+  "hit": false
+ },
+ {
+  "ep": 144,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.387,
+  "u_cmd": 0.415,
+  "hit": true
+ },
+ {
+  "ep": 144,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.365,
+  "u_cmd": 0.173,
+  "hit": false
+ },
+ {
+  "ep": 144,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.396,
+  "u_cmd": 0.415,
+  "hit": true
+ },
+ {
+  "ep": 144,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.369,
+  "u_cmd": 0.173,
+  "hit": false
+ },
+ {
+  "ep": 144,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.394,
+  "u_cmd": 0.415,
+  "hit": true
+ },
+ {
+  "ep": 144,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.361,
+  "u_cmd": 0.173,
+  "hit": false
+ },
+ {
+  "ep": 145,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.18,
+  "u_cmd": 0.173,
+  "hit": true
+ },
+ {
+  "ep": 145,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.209,
+  "u_cmd": 0.423,
+  "hit": false
+ },
+ {
+  "ep": 145,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.18,
+  "u_cmd": 0.173,
+  "hit": true
+ },
+ {
+  "ep": 145,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.201,
+  "u_cmd": 0.423,
+  "hit": false
+ },
+ {
+  "ep": 145,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.176,
+  "u_cmd": 0.173,
+  "hit": true
+ },
+ {
+  "ep": 145,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.191,
+  "u_cmd": 0.423,
+  "hit": false
+ },
+ {
+  "ep": 145,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.175,
+  "u_cmd": 0.173,
+  "hit": true
+ },
+ {
+  "ep": 145,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.233,
+  "u_cmd": 0.423,
+  "hit": false
+ },
+ {
+  "ep": 146,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.416,
+  "u_cmd": 0.414,
+  "hit": true
+ },
+ {
+  "ep": 146,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.406,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 146,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.414,
+  "u_cmd": 0.414,
+  "hit": true
+ },
+ {
+  "ep": 146,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.406,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 146,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.41,
+  "u_cmd": 0.414,
+  "hit": true
+ },
+ {
+  "ep": 146,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.394,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 146,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.409,
+  "u_cmd": 0.414,
+  "hit": true
+ },
+ {
+  "ep": 146,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.375,
+  "u_cmd": 0.181,
+  "hit": false
+ },
+ {
+  "ep": 168,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.228,
+  "u_cmd": 0.295,
+  "hit": true
+ },
+ {
+  "ep": 168,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.281,
+  "u_cmd": 0.595,
+  "hit": false
+ },
+ {
+  "ep": 168,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.236,
+  "u_cmd": 0.295,
+  "hit": true
+ },
+ {
+  "ep": 168,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.288,
+  "u_cmd": 0.595,
+  "hit": false
+ },
+ {
+  "ep": 168,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.23,
+  "u_cmd": 0.295,
+  "hit": true
+ },
+ {
+  "ep": 168,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.284,
+  "u_cmd": 0.595,
+  "hit": false
+ },
+ {
+  "ep": 168,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.252,
+  "u_cmd": 0.295,
+  "hit": true
+ },
+ {
+  "ep": 168,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.291,
+  "u_cmd": 0.595,
+  "hit": false
+ },
+ {
+  "ep": 169,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.516,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 169,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.519,
+  "u_cmd": 0.627,
+  "hit": false
+ },
+ {
+  "ep": 169,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.528,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 169,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.543,
+  "u_cmd": 0.627,
+  "hit": false
+ },
+ {
+  "ep": 169,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.531,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 169,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.548,
+  "u_cmd": 0.627,
+  "hit": false
+ },
+ {
+  "ep": 169,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.541,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 169,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.551,
+  "u_cmd": 0.627,
+  "hit": false
+ },
+ {
+  "ep": 170,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.583,
+  "u_cmd": 0.627,
+  "hit": true
+ },
+ {
+  "ep": 170,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.571,
+  "u_cmd": 0.304,
+  "hit": false
+ },
+ {
+  "ep": 170,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.59,
+  "u_cmd": 0.627,
+  "hit": true
+ },
+ {
+  "ep": 170,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.574,
+  "u_cmd": 0.304,
+  "hit": false
+ },
+ {
+  "ep": 170,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.589,
+  "u_cmd": 0.627,
+  "hit": true
+ },
+ {
+  "ep": 170,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.58,
+  "u_cmd": 0.304,
+  "hit": false
+ },
+ {
+  "ep": 170,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.581,
+  "u_cmd": 0.627,
+  "hit": true
+ },
+ {
+  "ep": 170,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.558,
+  "u_cmd": 0.304,
+  "hit": false
+ },
+ {
+  "ep": 202,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.233,
+  "u_cmd": 0.31,
+  "hit": true
+ },
+ {
+  "ep": 202,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.231,
+  "u_cmd": 0.502,
+  "hit": false
+ },
+ {
+  "ep": 202,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.221,
+  "u_cmd": 0.31,
+  "hit": true
+ },
+ {
+  "ep": 202,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.228,
+  "u_cmd": 0.502,
+  "hit": false
+ },
+ {
+  "ep": 202,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.211,
+  "u_cmd": 0.31,
+  "hit": true
+ },
+ {
+  "ep": 202,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.224,
+  "u_cmd": 0.502,
+  "hit": false
+ },
+ {
+  "ep": 202,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.217,
+  "u_cmd": 0.31,
+  "hit": true
+ },
+ {
+  "ep": 202,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.246,
+  "u_cmd": 0.502,
+  "hit": false
+ },
+ {
+  "ep": 204,
+  "off": 60,
+  "goal": "target",
+  "u_hat": 0.468,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 204,
+  "off": 60,
+  "goal": "other",
+  "u_hat": 0.466,
+  "u_cmd": 0.295,
+  "hit": false
+ },
+ {
+  "ep": 204,
+  "off": 100,
+  "goal": "target",
+  "u_hat": 0.465,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 204,
+  "off": 100,
+  "goal": "other",
+  "u_hat": 0.45,
+  "u_cmd": 0.295,
+  "hit": false
+ },
+ {
+  "ep": 204,
+  "off": 140,
+  "goal": "target",
+  "u_hat": 0.468,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 204,
+  "off": 140,
+  "goal": "other",
+  "u_hat": 0.464,
+  "u_cmd": 0.295,
+  "hit": false
+ },
+ {
+  "ep": 204,
+  "off": 180,
+  "goal": "target",
+  "u_hat": 0.482,
+  "u_cmd": 0.502,
+  "hit": true
+ },
+ {
+  "ep": 204,
+  "off": 180,
+  "goal": "other",
+  "u_hat": 0.48,
+  "u_cmd": 0.295,
+  "hit": false
+ }
+]
