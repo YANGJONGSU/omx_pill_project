@@ -841,7 +841,7 @@ cam_features = (1.0 + gamma[:, :, None, None]) * cam_features + beta[:, :, None,
     v3는 데이터를 늘리기 전에 <strong>하드웨어를 못 박는 것</strong>부터 했다.
   </p>
   <ul>
-    <li>top 카메라를 <strong>벽에 고정</strong> — 붐암 폐기 (건드릴 때마다 밀렸다)</li>
+    <li>top 카메라와 로봇 본체를 <strong>테이프로 고정</strong> — 벽에 달아 봤지만 화각이 맞지 않아 원래 거치대로 되돌렸다 (건드릴 때마다 밀렸다)</li>
     <li>매트와 약통을 <strong>책상에 고정</strong> — 팔이 밀어올린 것이 11mm / 6mm로 측정됐다</li>
     <li>wrist 렌즈 <strong>초점 링 고정</strong> — 진동에 풀린다</li>
     <li>기준 화각을 <strong>녹화가 끝난 뒤</strong> 학습 화각으로 다시 저장 (v2의 6px 사고 재발 방지)</li>
